@@ -44,7 +44,7 @@ const chatFlow = ai.defineFlow(
     const isGptModel = model === 'gpt';
     const modelKey = model as keyof typeof modelsMap;
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
-    const provider = isGptModel ? 'openai' : 'openrouter';
+    const provider = isGpt_model ? 'openai' : 'openrouter';
     const llm = ai.model(`${provider}/${modelToUse}`);
     
     // System prompt to guide the AI
@@ -66,10 +66,8 @@ const chatFlow = ai.defineFlow(
         },
         tools: [analyzeChart],
         toolChoice: 'auto',
-        // Context needs to be correctly passed for tools to use.
-        // Genkit tools automatically get their input from the prompt, 
-        // so we must ensure the relevant data is available in the prompt context.
-        // We'll pass assetName and candles in the user's message if they exist.
+        // By providing the tool's input data here, Genkit will automatically
+        // use it when the model decides to call the tool.
         context: {
           assetName,
           candles,
@@ -79,7 +77,7 @@ const chatFlow = ai.defineFlow(
       return { response: response.text };
     } catch (e) {
         console.error(`Error during AI generation with ${provider}:`, e);
-        const errorMsg = isGptModel
+        const errorMsg = isGpt_model
             ? "Error connecting to OpenAI. Check your API key and network."
             : "Error connecting to OpenRouter. Check your API key and network.";
         return { response: `Sorry, something went wrong. ${errorMsg}` };
