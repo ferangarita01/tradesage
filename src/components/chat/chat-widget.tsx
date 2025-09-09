@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,14 +9,24 @@ import { Sparkles, Send, User, Loader2, Bot } from "lucide-react";
 import { getChatResponse } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { ChatInput } from "@/ai/flows/chat";
 
-// Updated Message type to match the new backend schema
 type Message = {
-  role: 'user' | 'assistant';
-  content: string;
+  role: 'user' | 'model'; // Adjusted to match Genkit's 'model' role
+  content: { text: string }[];
 };
 
-export function ChatWidget() {
+type Candle = {
+  time: string;
+  price: number;
+};
+
+interface ChatWidgetProps {
+  symbol?: string;
+  candles?: Candle[];
+}
+
+export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -37,23 +47,29 @@ export function ChatWidget() {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    const userMessage: Message = { role: 'user', content: inputValue };
+    const userMessage: Message = { role: 'user', content: [{ text: inputValue }] };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
     
     try {
-      // Pass the previous messages as history and the selected model
-      const chatHistory = messages;
-      const response = await getChatResponse({ message: inputValue, history: chatHistory, model: model });
-      // Use 'assistant' role for the bot's response
-      const botMessage: Message = { role: 'assistant', content: response.response };
+      const chatInput: ChatInput = {
+        message: inputValue,
+        history: messages,
+        model: model,
+        assetName: symbol,
+        candles: candles,
+      };
+
+      const response = await getChatResponse(chatInput);
+      const botMessage: Message = { role: 'model', content: [{ text: response.response }] };
       setMessages((prev) => [...prev, botMessage]);
+
     } catch (error) {
       console.error("Failed to get chat response:", error);
       const errorMessage: Message = {
-        role: 'assistant',
-        content: "Sorry, I couldn't get a response. Please try again."
+        role: 'model',
+        content: [{ text: "Sorry, I couldn't get a response. Please try again." }]
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -96,7 +112,7 @@ export function ChatWidget() {
                   message.role === 'user' ? "justify-end" : "justify-start"
                 )}
               >
-                {message.role === 'assistant' && (
+                {message.role === 'model' && (
                     <div className="p-2 bg-primary rounded-full text-primary-foreground">
                         <Sparkles className="w-5 h-5" />
                     </div>
@@ -109,7 +125,7 @@ export function ChatWidget() {
                       : "bg-background"
                   )}
                 >
-                  <p className="text-base whitespace-pre-wrap">{message.content}</p>
+                  <p className="text-base whitespace-pre-wrap">{message.content.map(c => c.text).join('')}</p>
                 </div>
                  {message.role === 'user' && (
                     <div className="p-2 bg-muted rounded-full text-muted-foreground">
@@ -136,7 +152,7 @@ export function ChatWidget() {
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask TradeSage anything..."
+            placeholder="Ask about the current chart..."
             disabled={isLoading}
             autoComplete="off"
             className="h-12 pr-14 rounded-full text-base"

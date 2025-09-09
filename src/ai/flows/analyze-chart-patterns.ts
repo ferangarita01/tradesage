@@ -24,6 +24,7 @@ const AnalyzeChartInputSchema = z.object({
   assetName: z.string().describe('The name of the cryptocurrency asset.'),
   analysisType: z
     .enum(['trend', 'pattern'])
+    .default('pattern')
     .describe('The type of analysis to perform: trend or pattern.'),
 });
 export type AnalyzeChartInput = z.infer<typeof AnalyzeChartInputSchema>;
@@ -40,11 +41,20 @@ const AnalyzeChartOutputSchema = z.object({
 });
 export type AnalyzeChartOutput = z.infer<typeof AnalyzeChartOutputSchema>;
 
-export async function analyzeChart(
-  input: AnalyzeChartInput
-): Promise<AnalyzeChartOutput> {
-  return analyzeChartFlow(input);
-}
+export const analyzeChart = ai.defineTool(
+  {
+    name: 'analyzeChart',
+    description:
+      'Analyzes historical price data (candles) for a given asset to identify technical patterns or trends. Use this when the user asks for analysis, diagnosis, or to identify patterns on the chart.',
+    inputSchema: AnalyzeChartInputSchema,
+    outputSchema: AnalyzeChartOutputSchema,
+  },
+  async input => {
+    console.log('Analyzing chart with input:', input);
+    return analyzeChartFlow(input);
+  }
+);
+
 
 const analyzeChartPrompt = ai.definePrompt({
   name: 'analyzeChartPrompt',

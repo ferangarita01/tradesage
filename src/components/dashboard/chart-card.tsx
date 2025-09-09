@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { TradingViewChart } from "./tradingview-chart";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { Candle } from "@/hooks/usePrices";
 
 const availableAssets: Record<string, string> = {
     BTCUSDT: "Bitcoin (BTC)",
@@ -25,16 +26,19 @@ const availableAssets: Record<string, string> = {
     AVAXUSDT: "Avalanche (AVAX)",
 };
 
+interface ChartCardProps {
+  symbol?: string;
+  onSymbolChange: (symbol: string) => void;
+  interval?: string;
+  candles: Candle[];
+}
 
 export function ChartCard({
   symbol = "BTCUSDT",
   onSymbolChange,
-  interval = "1m",
-}: {
-  symbol?: string;
-  onSymbolChange: (symbol: string) => void;
-  interval?: string;
-}) {
+  interval = "5m",
+  candles,
+}: ChartCardProps) {
   const handleExport = () => {
     window.open(`/api/prices?symbol=${symbol}&interval=${interval}&format=csv`);
   };
@@ -58,7 +62,7 @@ export function ChartCard({
         </Button>
       </CardHeader>
       <CardContent className="flex-grow p-4">
-        <TradingViewChart symbol={symbol} interval={interval} theme="dark" />
+        <TradingViewChart symbol={symbol} interval={interval} theme="dark" candles={candles} />
       </CardContent>
     </Card>
   );

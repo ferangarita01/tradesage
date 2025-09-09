@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -8,21 +9,13 @@ import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePrices } from "@/hooks/usePrices";
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
 
-  // Datos de ejemplo para el detector de patrones
-  // Reemplaza esto con tu hook usePrices() cuando esté listo
-  const mockCandleData = [
-    { open: 45000, high: 46000, low: 44500, close: 45800 },
-    { open: 45800, high: 47000, low: 45200, close: 46500 },
-    { open: 46500, high: 47500, low: 46000, close: 47200 },
-    { open: 47200, high: 48000, low: 46800, close: 47000 },
-    { open: 47000, high: 47800, low: 46200, close: 46800 },
-    // Agrega más datos reales aquí
-  ];
+  const { candles } = usePrices(selectedSymbol, "5m", 300);
 
   const handlePatternsDetected = (patterns: any[]) => {
     console.log('Patrones detectados para', selectedSymbol, ':', patterns);
@@ -38,11 +31,12 @@ export default function Home() {
               <ChartCard
                 symbol={selectedSymbol}
                 onSymbolChange={setSelectedSymbol}
+                candles={candles}
               />
             </div>
             <div className="grid gap-6 md:gap-8 grid-cols-1">
               <PatternDetector 
-                candles={mockCandleData}
+                candles={candles}
                 onPatternsDetected={handlePatternsDetected}
               />
             </div>
@@ -54,7 +48,10 @@ export default function Home() {
             isChatOpen ? "w-[30rem]" : "w-0"
           )}
         >
-          {isChatOpen && <ChatWidget />}
+          {isChatOpen && <ChatWidget 
+            symbol={selectedSymbol}
+            candles={candles.map(c => ({ time: String(c.time), price: c.close }))}
+          />}
         </aside>
         <div className="absolute bottom-4 right-4 z-10">
           <Button

@@ -2,77 +2,115 @@
 'use server';
 
 /**
- * TradeSage Chat Flow (directo a OpenRouter API)
+ * @fileOverview TradeSage Chat Flow with chart analysis capabilities.
  */
+import { z } from 'zod';
+import { ai } from '../genkit';
+import { modelsMap } from '@/ai/models/sageLLMs';
+import { analyzeChart } from './analyze-chart-patterns';
 
-import { z } from "zod";
+const CandleSchema = z.object({
+  time: z.string(),
+  price: z.number(),
+});
 
-// Usa tu modelsMap como antes
-import { modelsMap } from "@/ai/models/sageLLMs";
-
-// Esquema de entrada
 const ChatInputSchema = z.object({
-  message: z.string(),
-  history: z.array(
-    z.object({
-      role: z.enum(["user", "assistant"]), // OpenRouter usa "assistant" en vez de "model"
-      content: z.string(),
-    })
-  ),
-  model: z.string().optional().default("mistral"),
+  message: z.string().describe('The user\'s message.'),
+  history: z
+    .array(
+      z.object({
+        role: z.enum(['user', 'model']),
+        content: z.array(z.object({ text: z.string() })),
+      })
+    )
+    .optional()
+    .describe('The conversation history.'),
+  assetName: z.string().optional().describe('The current asset being viewed.'),
+  candles: z
+    .array(CandleSchema)
+    .optional()
+    .describe('The recent price data for the asset.'),
+  model: z.string().optional().default('mistral'),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
-// Esquema de salida
 const ChatOutputSchema = z.object({
   response: z.string(),
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
-// Función principal del chat
 export async function chat(input: ChatInput): Promise<ChatOutput> {
-  const { message, history, model = "mistral" } = input;
+  return chatFlow(input);
+}
 
-  const modelKey = model as keyof typeof modelsMap;
-  const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
+const chatFlow = ai.defineFlow(
+  {
+    name: 'chatFlow',
+    inputSchema: ChatInputSchema,
+    outputSchema: ChatOutputSchema,
+    tools: [analyzeChart],
+  },
+  async input => {
+    const {
+      message,
+      history = [],
+      assetName = 'the current asset',
+      candles,
+      model = 'mistral',
+    } = input;
+    const modelKey = model as keyof typeof modelsMap;
+    const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
-  // Construir el array de mensajes compatible con OpenRouter
-  const messages = [
-    ...history.map((h) => ({
-      role: h.role,
-      content: h.content,
-    })),
-    { role: "user", content: message },
-  ];
+    const candleDataInfo = candles
+      ? `The user is currently viewing a chart for ${assetName} with the latest ${candles.length} price candles. You can use the analyzeChart tool to find trends or patterns.`
+      : `The user is not currently viewing a chart.`;
 
-  try {
-    // Llamada directa al endpoint de OpenRouter
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, // ✅ Asegúrate de tener configurada tu API key en Cloud Run
-        "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-        model: modelToUse,
-        messages,
-        }),
+    const systemPrompt = `You are TradeSage, an expert AI trading assistant. 
+Be concise and helpful. 
+Your primary function is to answer questions about trading and analyze cryptocurrency charts.
+${candleDataInfo}
+If the user asks for analysis, a diagnosis of the chart, or to identify patterns/trends, use the \`analyzeChart\` tool. You must provide both the assetName and the candles to the tool.
+Do not make up information about prices or trends. Use the tools provided.`;
+
+    const result = await ai.generate({
+      model: modelToUse,
+      system: systemPrompt,
+      prompt: message,
+      history: history,
+      tools: [analyzeChart],
+      toolConfig: {
+        // Force the model to use our tool if it seems relevant.
+        choice: 'auto',
+      },
+      config: {
+        // Add a bit of temperature to make the conversation feel more natural
+        temperature: 0.3,
+      },
     });
 
-    if (!res.ok) {
-        const errorBody = await res.text();
-        console.error("OpenRouter API Error:", res.status, errorBody);
-        return { response: `API Error: ${res.status}. Please check the server logs.` };
+    const text = result.text;
+    const toolCalls = result.toolCalls;
+
+    if (toolCalls.length > 0) {
+      console.log(`Executing ${toolCalls.length} tool calls...`);
+      const toolResult = await ai.runToolCalls(toolCalls);
+
+      // Re-run generate with the tool results to get a final response
+      const finalResult = await ai.generate({
+        model: modelToUse,
+        system: systemPrompt,
+        prompt: message,
+        history: [
+          ...history,
+          result.request.history[result.request.history.length - 1], // user message
+          result.message, // model's tool call request
+          ...toolResult.messages, // tool output
+        ],
+        tools: [analyzeChart],
+      });
+      return { response: finalResult.text ?? 'Tool executed, but no text response.' };
     }
 
-    const data = await res.json();
-    const responseText =
-        data?.choices?.[0]?.message?.content ??
-        "Lo siento, no pude generar una respuesta.";
-
-    return { response: responseText };
-  } catch (error) {
-    console.error("Failed to fetch from OpenRouter:", error);
-    return { response: "Sorry, I'm having trouble connecting to the AI. Please try again later." };
+    return { response: text ?? 'I could not generate a response.' };
   }
-}
+);

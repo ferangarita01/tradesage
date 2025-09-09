@@ -1,7 +1,8 @@
+
 "use client";
 import { useCallback, useEffect, useState } from "react";
 
-type Candle = {
+export type Candle = {
   time: number;
   open: number;
   high: number;
@@ -10,7 +11,7 @@ type Candle = {
   volume: number;
 };
 
-type PricesError = {
+export type PricesError = {
   type: 'network' | 'api' | 'rate_limit' | 'auth' | 'server' | 'unknown';
   message: string;
   retryable: boolean;

@@ -16,8 +16,6 @@ export async function getChartAnalysis(input: AnalyzeChartInput) {
   }
 }
 
-// The history type in ChatInput is now simpler, so this action doesn't need to change,
-// but we ensure the file is up-to-date with the latest imports.
 export async function getChatResponse(input: ChatInput) {
     "use server";
     try {

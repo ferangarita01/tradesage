@@ -1,23 +1,32 @@
+
 "use client";
 
 import * as React from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { usePrices } from '@/hooks/usePrices';
 import { AlertCircle, WifiOff, Clock, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import type { Candle, PricesError } from "@/hooks/usePrices";
 
 interface TradingViewChartProps {
   symbol?: string;
   interval?: string;
   theme?: 'light' | 'dark';
+  candles: Candle[];
+  loading?: boolean;
+  error?: PricesError | null;
+  refetch?: () => void;
+  retryCount?: number;
 }
 
 export function TradingViewChart({
   symbol = 'BTCUSDT',
-  interval = '1m',
-  theme = 'dark'
+  theme = 'dark',
+  candles,
+  loading,
+  error,
+  refetch,
+  retryCount,
 }: TradingViewChartProps) {
-  const { candles, loading, error, refetch, retryCount } = usePrices(symbol, interval, 200);
 
   const chartData = candles.map(c => ({
     time: new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -63,7 +72,7 @@ export function TradingViewChart({
         </div>
         <div className="text-center mb-4 max-w-md">
           <p className="text-sm text-muted-foreground mb-2">{error.message}</p>
-          {error.retryable && retryCount > 0 && (
+          {error.retryable && (retryCount ?? 0) > 0 && (
             <p className="text-xs text-muted-foreground">
               Auto-retry attempt {retryCount}/3
             </p>
