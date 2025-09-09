@@ -37,16 +37,28 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   const { message, history = [], model = "mistral", assetName, candles } = input;
 
   const modelKey = model as keyof typeof modelsMap;
-  const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
+  let modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
-  if (!process.env.OPENAI_API_KEY) {
-      console.error("❌ OPENROUTER_API_KEY no está configurado, usando fallback a OPENAI_API_KEY");
-      if (!process.env.OPENAI_API_KEY) {
-          return { response: "Error: La clave de API no está configurada en el servidor." };
-      }
+  const isGptModel = modelToUse.startsWith("openai/");
+
+  let apiUrl = "https://openrouter.ai/api/v1/chat/completions";
+  let apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (isGptModel) {
+    apiUrl = "https://api.openai.com/v1/chat/completions";
+    apiKey = process.env.OPENAI_API_KEY;
+    modelToUse = modelToUse.replace("openai/", ""); // OpenAI API no quiere el prefijo
   }
 
-  const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY;
+
+  if (!apiKey) {
+      const errorMsg = isGptModel
+        ? "La clave OPENAI_API_KEY no está configurada."
+        : "La clave OPENROUTER_API_KEY no está configurada.";
+      console.error(`❌ ${errorMsg}`);
+      return { response: `Error: ${errorMsg}` };
+  }
+
 
   // Si el usuario pregunta sobre el gráfico, primero usa la herramienta
   if (assetName && candles && (message.toLowerCase().includes('chart') || message.toLowerCase().includes('gráfico'))) {
@@ -65,7 +77,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
             { role: "user", content: message }
         ];
 
-         const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+         const res = await fetch(apiUrl, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${apiKey}`,
@@ -78,7 +90,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
         });
 
         if (!res.ok) {
-            console.error("OpenRouter request failed:", await res.text());
+            console.error("API request failed:", await res.text());
             return { response: "Lo siento, no pude conectar con la IA para el análisis." };
         }
         const data = await res.json();
@@ -102,7 +114,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
     { role: "user", content: message },
   ];
 
-  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  const res = await fetch(apiUrl, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -115,7 +127,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   });
 
   if (!res.ok) {
-    console.error("OpenRouter request failed:", await res.text());
+    console.error("API request failed:", await res.text());
     return { response: "Lo siento, no pude conectar con la IA." };
   }
 
@@ -126,4 +138,3 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
 
   return { response: responseText };
 }
-
