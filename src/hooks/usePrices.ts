@@ -101,22 +101,14 @@ export function usePrices(
     setError(null);
 
     try {
-      console.log(`🔄 Fetching ${symbol} candles (attempt ${retryCount + 1})...`);
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
-
       const res = await fetch(
         `/api/prices?symbol=${symbol}&interval=${interval}&limit=${limit}`,
         { 
-          signal: controller.signal,
           headers: {
             'Cache-Control': 'no-cache'
           }
         }
       );
-
-      clearTimeout(timeoutId);
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -129,71 +121,25 @@ export function usePrices(
         throw new Error(data.error);
       }
 
-      if (!data.candles || !Array.isArray(data.candles)) {
-        throw new Error('Invalid response format: missing candles array');
-      }
-
-      if (data.candles.length === 0) {
-        throw new Error(`No price data available for ${symbol}`);
-      }
-
-      // Validate candle data structure
-      const validCandles = data.candles.filter((candle: any) => 
-        candle && 
-        typeof candle.time === 'number' && 
-        typeof candle.close === 'number' &&
-        candle.time > 0 && 
-        candle.close > 0
-      );
-
-      if (validCandles.length === 0) {
-        throw new Error('No valid candle data received');
-      }
-
-      console.log(`✅ Loaded ${validCandles.length} valid candles for ${symbol}`);
-      setCandles(validCandles);
+      setCandles(data.candles || []);
       setLastUpdate(new Date());
       setRetryCount(0); // Reset retry count on success
       
     } catch (err: any) {
       const parsedError = parseError(err);
-      console.error(`❌ Failed to fetch ${symbol} candles:`, parsedError);
-      
       setError(parsedError);
       setCandles([]); // Clear stale data on error
       setRetryCount(prev => prev + 1);
     } finally {
       setLoading(false);
     }
-  }, [symbol, interval, limit, retryCount, parseError]);
+  }, [symbol, interval, limit, parseError]);
 
-  // Auto-retry logic with exponential backoff
-  useEffect(() => {
-    if (error?.retryable && retryCount < 3) {
-      const retryDelay = (error.retryAfter || 15) * Math.pow(2, retryCount - 1); // Exponential backoff
-      console.log(`🔄 Auto-retry in ${retryDelay}s (attempt ${retryCount + 1}/3)`);
-      
-      const timeoutId = setTimeout(() => {
-        load();
-      }, retryDelay * 1000);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [error, retryCount, load]);
-
-  // Initial load and periodic refresh
   useEffect(() => {
     load();
-    
-    // Refresh every 30 seconds (only if no error or error is retryable)
-    const intervalId = setInterval(() => {
-      if (!error || error.retryable) {
-        load();
-      }
-    }, 30000);
-
+    const intervalId = setInterval(load, 30000); // Refresh every 30 seconds
     return () => clearInterval(intervalId);
-  }, [symbol, interval, limit]); // Removed load from deps to prevent infinite loop
+  }, [load]);
 
   const manualRetry = useCallback(() => {
     setRetryCount(0);

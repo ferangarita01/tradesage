@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import PatternDetector from "@/components/dashboard/pattern-detector";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
@@ -15,11 +14,7 @@ export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
 
-  const { candles } = usePrices(selectedSymbol, "5m", 300);
-
-  const handlePatternsDetected = (patterns: any[]) => {
-    console.log('Patrones detectados para', selectedSymbol, ':', patterns);
-  };
+  const { candles, loading, error, refetch, retryCount } = usePrices(selectedSymbol, "5m", 300);
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -27,19 +22,15 @@ export default function Home() {
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 transition-all duration-300">
           <div className="grid gap-6 md:gap-8">
-            <div className="col-span-1">
-              <ChartCard
-                symbol={selectedSymbol}
-                onSymbolChange={setSelectedSymbol}
-                candles={candles}
-              />
-            </div>
-            <div className="grid gap-6 md:gap-8 grid-cols-1">
-              <PatternDetector 
-                candles={candles}
-                onPatternsDetected={handlePatternsDetected}
-              />
-            </div>
+            <ChartCard
+              symbol={selectedSymbol}
+              onSymbolChange={setSelectedSymbol}
+              candles={candles}
+              loading={loading}
+              error={error}
+              refetch={refetch}
+              retryCount={retryCount}
+            />
           </div>
         </main>
         <aside

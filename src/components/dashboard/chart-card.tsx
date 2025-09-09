@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Candle } from "@/hooks/usePrices";
+import type { Candle, PricesError } from "@/hooks/usePrices";
 
 const availableAssets: Record<string, string> = {
     BTCUSDT: "Bitcoin (BTC)",
@@ -31,6 +31,10 @@ interface ChartCardProps {
   onSymbolChange: (symbol: string) => void;
   interval?: string;
   candles: Candle[];
+  loading?: boolean;
+  error?: PricesError | null;
+  refetch?: () => void;
+  retryCount?: number;
 }
 
 export function ChartCard({
@@ -38,6 +42,10 @@ export function ChartCard({
   onSymbolChange,
   interval = "5m",
   candles,
+  loading,
+  error,
+  refetch,
+  retryCount,
 }: ChartCardProps) {
   const handleExport = () => {
     window.open(`/api/prices?symbol=${symbol}&interval=${interval}&format=csv`);
@@ -62,7 +70,16 @@ export function ChartCard({
         </Button>
       </CardHeader>
       <CardContent className="flex-grow p-4">
-        <TradingViewChart symbol={symbol} interval={interval} theme="dark" candles={candles} />
+        <TradingViewChart 
+            symbol={symbol} 
+            interval={interval} 
+            theme="dark" 
+            candles={candles} 
+            loading={loading}
+            error={error}
+            refetch={refetch}
+            retryCount={retryCount}
+        />
       </CardContent>
     </Card>
   );

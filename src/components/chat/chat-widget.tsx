@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { ChatInput } from "@/ai/flows/chat";
 
 type Message = {
-  role: 'user' | 'model'; // Adjusted to match Genkit's 'model' role
-  content: { text: string }[];
+  role: 'user' | 'assistant';
+  content: string;
 };
 
 type Candle = {
@@ -34,7 +34,6 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Scroll to the bottom when messages change
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('div');
         if (viewport) {
@@ -47,7 +46,7 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    const userMessage: Message = { role: 'user', content: [{ text: inputValue }] };
+    const userMessage: Message = { role: 'user', content: inputValue };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
@@ -62,14 +61,14 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
       };
 
       const response = await getChatResponse(chatInput);
-      const botMessage: Message = { role: 'model', content: [{ text: response.response }] };
+      const botMessage: Message = { role: 'assistant', content: response.response };
       setMessages((prev) => [...prev, botMessage]);
 
     } catch (error) {
       console.error("Failed to get chat response:", error);
       const errorMessage: Message = {
-        role: 'model',
-        content: [{ text: "Sorry, I couldn't get a response. Please try again." }]
+        role: 'assistant',
+        content: "Sorry, I couldn't get a response. Please try again."
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -112,7 +111,7 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
                   message.role === 'user' ? "justify-end" : "justify-start"
                 )}
               >
-                {message.role === 'model' && (
+                {message.role === 'assistant' && (
                     <div className="p-2 bg-primary rounded-full text-primary-foreground">
                         <Sparkles className="w-5 h-5" />
                     </div>
@@ -125,7 +124,7 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
                       : "bg-background"
                   )}
                 >
-                  <p className="text-base whitespace-pre-wrap">{message.content.map(c => c.text).join('')}</p>
+                  <p className="text-base whitespace-pre-wrap">{message.content}</p>
                 </div>
                  {message.role === 'user' && (
                     <div className="p-2 bg-muted rounded-full text-muted-foreground">
@@ -166,3 +165,4 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
     </div>
   );
 }
+
