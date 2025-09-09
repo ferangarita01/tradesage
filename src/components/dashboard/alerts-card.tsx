@@ -1,8 +1,10 @@
+
 "use client"
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BellPlus, Bell, ArrowUp, ArrowDown } from "lucide-react";
+import { BellPlus, Bell, ArrowUp, ArrowDown, BellRing } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,12 +20,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "../ui/scroll-area";
 import { Separator } from "../ui/separator";
 
-const alerts = [
-    { asset: "Bitcoin", condition: "rises above", value: "$70,000" },
-    { asset: "Ethereum", condition: "drops below", value: "$3,400" }
-];
+// Define the type for an alert
+type Alert = {
+    asset: string;
+    condition: "rises above" | "drops below";
+    value: string;
+};
 
 export function AlertsCard() {
+    // Manage alerts with component state, starting with an empty array
+    const [alerts, setAlerts] = React.useState<Alert[]>([]);
+
+    // We can add a function to handle creating a new alert later
+    const handleCreateAlert = () => {
+        // This is where we would add logic to save the new alert
+        // For now, it does nothing
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -78,7 +91,7 @@ export function AlertsCard() {
                                 </div>
                             </div>
                             <DialogFooter>
-                            <Button type="submit">Save Alert</Button>
+                            <Button type="submit" onClick={handleCreateAlert}>Save Alert</Button>
                             </DialogFooter>
                         </DialogContent>
                     </Dialog>
@@ -86,27 +99,35 @@ export function AlertsCard() {
             </CardHeader>
             <CardContent>
                 <ScrollArea className="h-48">
-                    <div className="space-y-4">
-                        {alerts.map((alert, index) => (
-                            <div key={index} className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Bell className="w-4 h-4 text-muted-foreground" />
-                                        <span className="font-medium text-foreground">{alert.asset}</span>
+                    {alerts.length > 0 ? (
+                        <div className="space-y-4">
+                            {alerts.map((alert, index) => (
+                                <div key={index} className="space-y-2">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <Bell className="w-4 h-4 text-muted-foreground" />
+                                            <span className="font-medium text-foreground">{alert.asset}</span>
+                                        </div>
+                                        <span className="font-semibold text-primary">{alert.value}</span>
                                     </div>
-                                    <span className="font-semibold text-primary">{alert.value}</span>
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
+                                        {alert.condition.includes("above") ? 
+                                            <ArrowUp className="w-3 h-3 text-green-500" /> : 
+                                            <ArrowDown className="w-3 h-3 text-red-500" />
+                                        }
+                                        <span>{alert.condition}</span>
+                                    </div>
+                                    {index < alerts.length - 1 && <Separator className="pt-2"/>}
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground ml-6">
-                                    {alert.condition.includes("above") ? 
-                                        <ArrowUp className="w-3 h-3 text-green-500" /> : 
-                                        <ArrowDown className="w-3 h-3 text-red-500" />
-                                    }
-                                    <span>{alert.condition}</span>
-                                </div>
-                                {index < alerts.length - 1 && <Separator className="pt-2"/>}
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <BellRing className="w-10 h-10 mb-2" />
+                            <p className="font-medium">No active alerts</p>
+                            <p className="text-xs">Create an alert to get started.</p>
+                        </div>
+                    )}
                 </ScrollArea>
             </CardContent>
         </Card>
