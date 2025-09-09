@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, Zap, RefreshCw } from "lucide-react";
 import { getChartAnalysis } from "@/app/actions";
 import type { AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
+import { usePrices } from "@/hooks/usePrices";
 
 const chartConfig = {
   price: {
@@ -26,63 +27,26 @@ const chartConfig = {
   },
 };
 
-type Candle = {
-  time: number;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-};
-
 export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: string; interval?: string }) {
-  const [chartData, setChartData] = React.useState<{ time: string; price: number }[]>([]);
+  const { candles, loading: isLoadingData, refetch: fetchPrices } = usePrices(symbol, interval);
   const [analysis, setAnalysis] = React.useState<AnalyzeChartOutput | null>(null);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isLoadingData, setIsLoadingData] = React.useState(true);
-  const [lastPrice, setLastPrice] = React.useState<number>(0);
-  const chartRef = React.useRef<HTMLDivElement>(null);
+  const [isLoadingAnalysis, setIsLoadingAnalysis] = React.useState(false);
+  
+  const chartData = React.useMemo(() => {
+    return candles.map((candle) => ({
+      time: new Date(candle.time).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      }),
+      price: candle.close,
+    }));
+  }, [candles]);
 
-  // Fetch real market data
-  const fetchPrices = React.useCallback(async () => {
-    try {
-      const res = await fetch(`/api/prices?symbol=${symbol}&interval=${interval}&limit=100`);
-      const data = await res.json();
-      
-      if (data.candles) {
-        const formattedData = data.candles.map((candle: Candle) => ({
-          time: new Date(candle.time).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          }),
-          price: candle.close,
-        }));
-        
-        setChartData(formattedData);
-        if (formattedData.length > 0) {
-          setLastPrice(formattedData[formattedData.length - 1].price);
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching prices:", error);
-    } finally {
-      setIsLoadingData(false);
-    }
-  }, [symbol, interval]);
-
-  // Initial load and auto-refresh
-  React.useEffect(() => {
-    fetchPrices();
-    
-    // Auto-refresh every 30 seconds for real-time updates
-    const refreshInterval = setInterval(fetchPrices, 30000);
-    
-    return () => clearInterval(refreshInterval);
-  }, [fetchPrices]);
+  const lastPrice = chartData.length > 0 ? chartData[chartData.length - 1].price : 0;
 
   const handleAnalysis = async () => {
     if (chartData.length === 0) return;
-    setIsLoading(true);
+    setIsLoadingAnalysis(true);
     setAnalysis(null);
 
     try {
@@ -96,12 +60,11 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
       console.error("Analysis failed:", error);
       // You could add a toast notification here to inform the user.
     } finally {
-      setIsLoading(false);
+      setIsLoadingAnalysis(false);
     }
   };
 
   const handleRefresh = () => {
-    setIsLoadingData(true);
     fetchPrices();
   };
 
@@ -140,8 +103,8 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
             </Button>
-            <Button onClick={handleAnalysis} disabled={isLoading || isLoadingData || chartData.length === 0} size="sm" variant="outline">
-              {isLoading ? (
+            <Button onClick={handleAnalysis} disabled={isLoadingAnalysis || isLoadingData || chartData.length === 0} size="sm" variant="outline">
+              {isLoadingAnalysis ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Zap className="mr-2 h-4 w-4" />
@@ -152,7 +115,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        {isLoadingData ? (
+        {isLoadingData && chartData.length === 0 ? (
           <div className="h-[300px] w-full flex items-center justify-center">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -160,7 +123,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
             </div>
           </div>
         ) : (
-          <div className="h-[300px] w-full" ref={chartRef}>
+          <div className="h-[300px] w-full">
             <ChartContainer config={chartConfig} className="h-full w-full">
               <LineChart
                 accessibilityLayer

@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 type Candle = {
   time: number;
@@ -10,24 +10,34 @@ type Candle = {
   volume: number;
 };
 
-export function usePrices(symbol: string = "BTCUSDT", interval: string = "1m") {
+export function usePrices(symbol: string = "BTCUSDT", interval: string = "1m", limit: number = 100) {
   const [candles, setCandles] = useState<Candle[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const res = await fetch(`/api/prices?symbol=${symbol}&interval=${interval}&limit=200`);
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/prices?symbol=${symbol}&interval=${interval}&limit=${limit}`);
       const data = await res.json();
-      setCandles(data.candles ?? []);
+      if (data.candles) {
+        setCandles(data.candles);
+      } else {
+        setCandles([]); // Clear candles on error or invalid response
+      }
+    } catch (error) {
+      console.error("Failed to fetch prices:", error);
+      setCandles([]); // Clear candles on fetch error
+    } finally {
       setLoading(false);
     }
+  }, [symbol, interval, limit]);
+
+  useEffect(() => {
     load();
 
-    // Auto-refresh cada 30s
-    const id = setInterval(load, 30000);
+    const id = setInterval(load, 30000); // refresh every 30s
     return () => clearInterval(id);
-  }, [symbol, interval]);
+  }, [load]);
 
-  return { candles, loading };
+  return { candles, loading, refetch: load };
 }
