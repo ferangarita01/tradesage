@@ -76,8 +76,8 @@ export function ChatWidget() {
                         <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="mistral">Mistral-7B (Free)</SelectItem>
-                        <SelectItem value="llama">LLaMA-2-13B (Free)</SelectItem>
+                        <SelectItem value="mistral">Mistral Small (Free)</SelectItem>
+                        <SelectItem value="llama">LLaMA-3-8B (Free)</SelectItem>
                         <SelectItem value="yi">Yi-34B (Free, Large)</SelectItem>
                         <SelectItem value="gpt">GPT-4o Mini</SelectItem>
                     </SelectContent>

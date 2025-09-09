@@ -1,10 +1,10 @@
 // src/ai/models/sageLLMs.ts
 
-// Mistral‑7B Instruct (gratis OSS ✅ versión estable v0.2)
-const mistralLLM = 'mistralai/mistral-7b-instruct-v0.2';
+// Mistral Small (última versión, rápida y gratuita en OpenRouter)
+const mistralLLM = 'mistralai/mistral-small-latest';
 
-// LLaMA‑2 13B Chat
-const llamaLLM = 'meta-llama/llama-2-13b-chat';
+// LLaMA-3 8B (la versión más nueva de Llama)
+const llamaLLM = 'meta-llama/llama-3-8b-instruct';
 
 // Yi‑34B Chat
 const yiLLM = '01-ai/yi-34b-chat';
