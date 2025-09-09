@@ -1,13 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { TradingViewChart } from "./tradingview-chart";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap, RefreshCw } from "lucide-react";
 import { getChartAnalysis } from "@/app/actions";
 import type { AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
 import { usePrices } from "@/hooks/usePrices";
-import TradingViewChart from "@/components/ui/tradingview-chart";
 
 export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: string; interval?: string }) {
   const { candles, loading: isLoadingData, refetch: fetchPrices } = usePrices(symbol, interval);
@@ -85,19 +85,12 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-grow">
-        {isLoadingData && candles.length === 0 ? (
-          <div className="h-[300px] w-full flex items-center justify-center">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading market data...
-            </div>
-          </div>
-        ) : (
-          <div className="h-[300px] w-full">
-            <TradingViewChart data={candles} />
-          </div>
-        )}
+      <CardContent className="flex-grow p-0">
+        <TradingViewChart 
+          symbol={symbol} 
+          interval={interval}
+          theme="Dark" 
+        />
       </CardContent>
       {analysis && (
         <CardFooter className="flex-col items-start gap-2 text-sm">
