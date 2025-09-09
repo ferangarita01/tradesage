@@ -48,7 +48,6 @@ const chatFlow = ai.defineFlow(
     name: 'chatFlow',
     inputSchema: ChatInputSchema,
     outputSchema: ChatOutputSchema,
-    tools: [analyzeChart],
   },
   async input => {
     const {
@@ -62,7 +61,7 @@ const chatFlow = ai.defineFlow(
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
     const candleDataInfo = candles
-      ? `The user is currently viewing a chart for ${assetName} with the latest ${candles.length} price candles. You can use the analyzeChart tool to find trends or patterns.`
+      ? `The user is currently viewing a chart for ${assetName} with the latest ${candles.length} price candles. You have a tool called 'analyzeChart' available.`
       : `The user is not currently viewing a chart.`;
 
     const systemPrompt = `You are TradeSage, an expert AI trading assistant. 

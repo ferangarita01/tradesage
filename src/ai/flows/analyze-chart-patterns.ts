@@ -22,10 +22,6 @@ const AnalyzeChartInputSchema = z.object({
     .array(CandleSchema)
     .describe('The historical price data for the asset.'),
   assetName: z.string().describe('The name of the cryptocurrency asset.'),
-  analysisType: z
-    .enum(['trend', 'pattern'])
-    .default('pattern')
-    .describe('The type of analysis to perform: trend or pattern.'),
 });
 export type AnalyzeChartInput = z.infer<typeof AnalyzeChartInputSchema>;
 
@@ -60,7 +56,7 @@ const analyzeChartPrompt = ai.definePrompt({
   name: 'analyzeChartPrompt',
   input: {schema: AnalyzeChartInputSchema},
   output: {schema: AnalyzeChartOutputSchema},
-  prompt: `Analyze the following {{assetName}} price data for {{analysisType}} detection.
+  prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
 Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
 
 Candles (last 50 periods):
