@@ -165,4 +165,3 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
     </div>
   );
 }
-

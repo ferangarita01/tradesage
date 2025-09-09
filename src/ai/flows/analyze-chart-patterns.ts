@@ -37,44 +37,29 @@ const AnalyzeChartOutputSchema = z.object({
 });
 export type AnalyzeChartOutput = z.infer<typeof AnalyzeChartOutputSchema>;
 
-export const analyzeChart = ai.defineTool(
-  {
-    name: 'analyzeChart',
-    description:
-      'Analyzes historical price data (candles) for a given asset to identify technical patterns or trends. Use this when the user asks for analysis, diagnosis, or to identify patterns on the chart.',
-    inputSchema: AnalyzeChartInputSchema,
-    outputSchema: AnalyzeChartOutputSchema,
-  },
-  async input => {
-    console.log('Analyzing chart with input:', input);
-    return analyzeChartFlow(input);
-  }
-);
-
-
-const analyzeChartPrompt = ai.definePrompt({
-  name: 'analyzeChartPrompt',
-  input: {schema: AnalyzeChartInputSchema},
-  output: {schema: AnalyzeChartOutputSchema},
-  prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
-Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
-
-Candles (last 50 periods):
-{{{json candles}}}
-
-Provide a concise summary of your findings.`,
-});
-
 const analyzeChartFlow = ai.defineFlow(
   {
     name: 'analyzeChartFlow',
     inputSchema: AnalyzeChartInputSchema,
     outputSchema: AnalyzeChartOutputSchema,
   },
-  async input => {
+  async (input) => {
+    const analyzeChartPrompt = ai.definePrompt({
+        name: 'analyzeChartPrompt',
+        input: {schema: AnalyzeChartInputSchema},
+        output: {schema: AnalyzeChartOutputSchema},
+        prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
+      Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
+
+      Candles (last 50 periods):
+      {{{json candles}}}
+
+      Provide a concise summary of your findings.`,
+      });
+
     try {
-      const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
-      return output!;
+        const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
+        return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
       // Return a default error response that matches the expected schema
@@ -83,5 +68,20 @@ const analyzeChartFlow = ai.defineFlow(
         confidenceLevel: 0.0,
       };
     }
+  }
+);
+
+
+export const analyzeChart = ai.defineTool(
+  {
+    name: 'analyzeChart',
+    description:
+      'Analyzes historical price data (candles) for a given asset to identify technical patterns or trends. Use this when the user asks for analysis, diagnosis, or to identify patterns on the chart.',
+    inputSchema: AnalyzeChartInputSchema,
+    outputSchema: AnalyzeChartOutputSchema,
+  },
+  async (input) => {
+    console.log('Analyzing chart with tool using input:', input);
+    return await analyzeChartFlow(input);
   }
 );
