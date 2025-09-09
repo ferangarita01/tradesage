@@ -4,7 +4,7 @@
 import {openai} from '@genkit-ai/openai';
 
 // Mistral‑7B Instruct (gratis OSS)
-export const mistralLLM = openai.model('mistralai/mistral-7b-instruct-v0.2');
+export const mistralLLM = openai.model('mistralai/mistral-7b-instruct');
 
 // LLaMA‑2 13B Chat
 export const llamaLLM = openai.model('meta-llama/llama-2-13b-chat');
