@@ -6,6 +6,6 @@ export const openrouter = new OpenAI({
   baseURL: "https://openrouter.ai/api/v1",
   defaultHeaders: {
     "HTTP-Referer": process.env.SITE_URL ?? "http://localhost:3000",
-    "X-Title": process.env.APP_NAME ?? "Tradesage",
+    "X-Title": process.env.APP_NAME ?? "CryptoSage",
   },
 });
