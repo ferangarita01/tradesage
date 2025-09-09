@@ -1,4 +1,3 @@
-// src/components/dashboard/pattern-detector.tsx
 "use client";
 
 import React from 'react';
@@ -28,6 +27,19 @@ const PatternDetector: React.FC<PatternDetectorProps> = ({
   onPatternsDetected 
 }) => {
   const { patterns, loading, error, detectPatterns, clearPatterns } = usePatternDetection();
+
+  // ⏱️ Evita Hydration mismatch mostrando lastUpdated sólo en cliente
+  const [lastUpdated, setLastUpdated] = React.useState<string>("");
+
+  React.useEffect(() => {
+    const updateTime = () => {
+      setLastUpdated(new Date().toLocaleTimeString());
+    };
+    updateTime(); // inicial
+
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleDetectPatterns = async () => {
     await detectPatterns(candles);
@@ -183,11 +195,10 @@ const PatternDetector: React.FC<PatternDetectorProps> = ({
           </div>
         )}
 
-        {candles.length > 0 && (
+        {candles.length > 0 && lastUpdated && (
           <div className="mt-4 pt-4 border-t">
             <p className="text-sm text-muted-foreground">
-              📊 Analizando {candles.length} velas • 
-              Última actualización: {new Date().toLocaleTimeString()}
+              📊 Analizando {candles.length} velas • Última actualización: {lastUpdated}
             </p>
           </div>
         )}
