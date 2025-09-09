@@ -8,8 +8,9 @@
  * - AggregateRelevantNewsOutput - The return type for the aggregateRelevantNews function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import { ai } from '@/ai/genkit';
+import { chatComplete } from '@/ai/providers/chat';
+import { z } from 'zod';
 
 const AggregateRelevantNewsInputSchema = z.object({
   assets: z
@@ -25,9 +26,48 @@ const AggregateRelevantNewsOutputSchema = z.object({
 export type AggregateRelevantNewsOutput = z.infer<typeof AggregateRelevantNewsOutputSchema>;
 
 export async function aggregateRelevantNews(input: AggregateRelevantNewsInput): Promise<AggregateRelevantNewsOutput> {
-  return aggregateRelevantNewsFlow(input);
+  // Use OpenRouter instead of Genkit flow
+  return aggregateRelevantNewsWithOpenRouter(input);
 }
 
+// OpenRouter implementation
+async function aggregateRelevantNewsWithOpenRouter(input: AggregateRelevantNewsInput): Promise<AggregateRelevantNewsOutput> {
+  const systemPrompt = `You are an AI assistant specialized in financial markets and news analysis.
+Your task is to aggregate relevant news articles for cryptocurrencies and stocks.
+Only include news that could significantly impact asset prices.`;
+
+  const userPrompt = `Find and aggregate relevant news articles for these assets: ${input.assets.join(", ")}.
+
+Focus on:
+- Market-moving events
+- Regulatory changes
+- Major partnerships or developments
+- Technical breakthroughs
+- Institutional adoption
+
+RESPOND ONLY in valid JSON format:
+{
+  "newsItems": ["news headline 1", "news headline 2", "..."],
+  "impactful": true/false
+}`;
+
+  try {
+    const raw = await chatComplete({
+      system: systemPrompt,
+      user: userPrompt,
+      model: "openai/gpt-4o-mini",
+      temperature: 0.2
+    });
+
+    const parsed = JSON.parse(raw);
+    return AggregateRelevantNewsOutputSchema.parse(parsed);
+  } catch (error) {
+    console.error("Error in aggregateRelevantNewsWithOpenRouter:", error);
+    return { newsItems: [], impactful: false };
+  }
+}
+
+// Keep original Genkit implementation as fallback/alternative
 const shouldIncludeTool = ai.defineTool({
   name: 'shouldIncludeTool',
   description: 'Determines if the provided article will affect the price of the asset',
@@ -45,8 +85,8 @@ const shouldIncludeTool = ai.defineTool({
 
 const prompt = ai.definePrompt({
   name: 'aggregateRelevantNewsPrompt',
-  input: {schema: AggregateRelevantNewsInputSchema},
-  output: {schema: AggregateRelevantNewsOutputSchema},
+  input: { schema: AggregateRelevantNewsInputSchema },
+  output: { schema: AggregateRelevantNewsOutputSchema },
   tools: [shouldIncludeTool],
   prompt: `You are an AI assistant tasked with aggregating relevant news articles for a list of cryptocurrencies and stocks.
 
@@ -63,7 +103,7 @@ export const aggregateRelevantNewsFlow = ai.defineFlow(
     outputSchema: AggregateRelevantNewsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
+    const { output } = await prompt(input);
     return output!;
   }
 );
