@@ -55,7 +55,7 @@ const getMarketDataTool = ai.defineTool(
     },
     async ({ symbol, interval = '15m' }) => {
         console.log(`Using tool to fetch market data for ${symbol} with interval ${interval}`);
-        const response = await fetch(`http://localhost:3000/api/prices?symbol=${symbol}&interval=${interval}&limit=100`);
+        const response = await fetch(`http://localhost:9002/api/prices?symbol=${symbol}&interval=${interval}&limit=100`);
         if (!response.ok) {
             throw new Error(`Failed to fetch market data: ${response.statusText}`);
         }
