@@ -55,7 +55,7 @@ export function ChatWidget() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-card">
+    <div className="flex flex-col h-full bg-card overflow-hidden">
       <div className="p-4 border-b border-border">
           <h2 className="text-xl font-semibold flex items-center gap-2">
               <Sparkles className="text-primary w-6 h-6" />
