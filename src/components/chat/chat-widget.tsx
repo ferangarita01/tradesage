@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, User, Loader2, X } from "lucide-react";
+import { Sparkles, Send, User, Loader2 } from "lucide-react";
 import { getChatResponse } from "@/app/actions";
 import { cn } from "@/lib/utils";
 
@@ -14,13 +14,10 @@ type Message = {
 };
 
 export function ChatWidget() {
-  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  const toggleChat = () => setIsOpen(!isOpen);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -56,86 +53,76 @@ export function ChatWidget() {
       setIsLoading(false);
     }
   };
-  
-  if (!isOpen) {
-    return (
-      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-        <Button onClick={toggleChat} size="lg" className="rounded-full shadow-lg text-lg px-8 py-6">
-          <Sparkles className="mr-3 h-6 w-6" />
-          Chat with Sage
-        </Button>
-      </div>
-    );
-  }
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex flex-col p-4 sm:p-6 md:p-8">
-      <div className="flex-1 flex flex-col max-w-4xl w-full mx-auto">
-        <div className="flex-1 overflow-hidden">
-          <ScrollArea className="h-full pr-4 -mr-4" ref={scrollAreaRef}>
-            <div className="space-y-6">
-              {messages.map((message, index) => (
+    <div className="flex flex-col h-full bg-card">
+      <div className="p-4 border-b border-border">
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+              <Sparkles className="text-primary w-6 h-6" />
+              Chat with Sage
+          </h2>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        <ScrollArea className="h-full p-4" ref={scrollAreaRef}>
+          <div className="space-y-6">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  "flex items-start gap-3",
+                  message.role === 'user' ? "justify-end" : "justify-start"
+                )}
+              >
+                {message.role === 'model' && (
+                    <div className="p-2 bg-primary rounded-full text-primary-foreground">
+                        <Sparkles className="w-5 h-5" />
+                    </div>
+                )}
                 <div
-                  key={index}
                   className={cn(
-                    "flex items-start gap-4",
-                    message.role === 'user' ? "justify-end" : "justify-start"
+                    "p-3 rounded-xl max-w-[85%]",
+                    message.role === 'user'
+                      ? "bg-secondary text-secondary-foreground"
+                      : "bg-background"
                   )}
                 >
-                  {message.role === 'model' && (
-                      <div className="p-2.5 bg-primary rounded-full text-primary-foreground">
-                          <Sparkles className="w-6 h-6" />
-                      </div>
-                  )}
-                  <div
-                    className={cn(
-                      "p-4 rounded-xl max-w-[85%]",
-                      message.role === 'user'
-                        ? "bg-secondary text-secondary-foreground"
-                        : "bg-card border"
-                    )}
-                  >
-                    <p className="text-base">{message.content[0].text}</p>
-                  </div>
-                   {message.role === 'user' && (
-                      <div className="p-2.5 bg-muted rounded-full text-muted-foreground">
-                          <User className="w-6 h-6" />
-                      </div>
-                  )}
+                  <p className="text-base">{message.content[0].text}</p>
                 </div>
-              ))}
-              {isLoading && (
-                  <div className="flex items-start gap-4 justify-start">
-                      <div className="p-2.5 bg-primary rounded-full text-primary-foreground">
-                         <Loader2 className="w-6 h-6 animate-spin" />
-                      </div>
-                      <div className="p-4 rounded-xl bg-card border">
-                          <p className="text-base text-muted-foreground">Sage is thinking...</p>
-                      </div>
-                  </div>
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-        <div className="pt-6">
-          <form onSubmit={handleSendMessage} className="relative">
-            <Input
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask Sage anything..."
-              disabled={isLoading}
-              autoComplete="off"
-              className="h-14 pl-6 pr-16 rounded-full text-lg"
-            />
-            <Button type="submit" size="icon" disabled={isLoading} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full">
-              <Send className="h-5 w-5" />
-            </Button>
-          </form>
-        </div>
+                 {message.role === 'user' && (
+                    <div className="p-2 bg-muted rounded-full text-muted-foreground">
+                        <User className="w-5 h-5" />
+                    </div>
+                )}
+              </div>
+            ))}
+            {isLoading && (
+                <div className="flex items-start gap-3 justify-start">
+                    <div className="p-2 bg-primary rounded-full text-primary-foreground">
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                    <div className="p-3 rounded-xl bg-background">
+                        <p className="text-base text-muted-foreground">Sage is thinking...</p>
+                    </div>
+                </div>
+            )}
+          </div>
+        </ScrollArea>
       </div>
-      <Button variant="ghost" size="icon" onClick={toggleChat} className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full bg-muted">
-        <X className="h-6 w-6" />
-      </Button>
+      <div className="p-4 border-t border-border">
+        <form onSubmit={handleSendMessage} className="relative">
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Ask Sage anything..."
+            disabled={isLoading}
+            autoComplete="off"
+            className="h-12 pl-4 pr-14 rounded-full text-base"
+          />
+          <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full">
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -7,25 +7,29 @@ import { ChatWidget } from "@/components/chat/chat-widget";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col h-screen bg-background">
       <Header />
-      <main className="flex-1 p-4 sm:p-6 md:p-8">
-        <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4">
-          <div className="lg:col-span-2 xl:col-span-3">
-            <ChartCard />
-          </div>
-          <div className="lg:col-span-1 xl:col-span-1">
-            <AssetTrackerCard />
-          </div>
-          <div className="lg:col-span-3 xl:col-span-4">
-            <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
-              <NewsCard />
-              <AlertsCard />
+      <div className="flex flex-1 overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+          <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="lg:col-span-2 xl:col-span-3">
+              <ChartCard />
+            </div>
+            <div className="lg:col-span-1 xl:col-span-1">
+              <AssetTrackerCard />
+            </div>
+            <div className="lg:col-span-3 xl:col-span-4">
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
+                <NewsCard />
+                <AlertsCard />
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-      <ChatWidget />
+        </main>
+        <aside className="w-[30rem] border-l border-border flex flex-col">
+          <ChatWidget />
+        </aside>
+      </div>
     </div>
   );
 }
