@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import { NewsCard } from "@/components/dashboard/news-card";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
@@ -27,8 +26,7 @@ export default function Home() {
                 onSymbolChange={setSelectedSymbol}
               />
             </div>
-            <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
-                <NewsCard />
+            <div className="grid gap-6 md:gap-8 grid-cols-1">
                 <AlertsCard />
             </div>
           </div>
