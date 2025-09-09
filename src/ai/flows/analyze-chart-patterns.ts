@@ -8,11 +8,9 @@
  * - AnalyzeChartInput - The input type for the analyzeChart function.
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
-import {generate} from 'genkit/generate';
-import {prompt} from 'genkit/prompt';
-import {flow} from 'genkit/flow';
-import {z} from 'genkit/zod';
+import { z } from 'zod';
 import { mistralLLM } from '../models/sageLLMs';
+import { ai } from '../genkit';
 
 const CandleSchema = z.object({
   time: z.string(),
@@ -48,9 +46,8 @@ export async function analyzeChart(
   return analyzeChartFlow(input);
 }
 
-const analyzeChartPrompt = prompt({
+const analyzeChartPrompt = ai.definePrompt({
   name: 'analyzeChartPrompt',
-  model: mistralLLM,
   input: {schema: AnalyzeChartInputSchema},
   output: {schema: AnalyzeChartOutputSchema},
   prompt: `Analyze the following {{assetName}} price data for {{analysisType}} detection.
@@ -62,7 +59,7 @@ Candles (last 50 periods):
 Provide a concise summary of your findings.`,
 });
 
-const analyzeChartFlow = flow(
+const analyzeChartFlow = ai.defineFlow(
   {
     name: 'analyzeChartFlow',
     inputSchema: AnalyzeChartInputSchema,
@@ -70,12 +67,12 @@ const analyzeChartFlow = flow(
   },
   async input => {
     try {
-      const result = await generate({
-        prompt: analyzeChartPrompt,
+      const result = await ai.generate({
+        prompt: 'analyzeChartPrompt',
         model: mistralLLM,
         input,
       });
-      return result.output()!;
+      return result.output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
       // Return a default error response that matches the expected schema
