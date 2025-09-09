@@ -15,10 +15,9 @@ import {
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap } from "lucide-react";
+import { Loader2, Zap, RefreshCw } from "lucide-react";
 import { getChartAnalysis } from "@/app/actions";
 import type { AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
-import { MOCK_CHART_DATA } from "@/lib/data";
 
 const chartConfig = {
   price: {
@@ -27,31 +26,57 @@ const chartConfig = {
   },
 };
 
-export function ChartCard() {
-  const [chartData, setChartData] = React.useState(MOCK_CHART_DATA);
+type Candle = {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+};
+
+export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: string; interval?: string }) {
+  const [chartData, setChartData] = React.useState<{ time: string; price: number }[]>([]);
   const [analysis, setAnalysis] = React.useState<AnalyzeChartOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoadingData, setIsLoadingData] = React.useState(true);
+  const [lastPrice, setLastPrice] = React.useState<number>(0);
   const chartRef = React.useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      setChartData((prevData) => {
-        const lastDataPoint = prevData[prevData.length - 1];
-        const newPrice =
-          lastDataPoint.price + (Math.random() - 0.5) * 1000;
-        const newTime = new Date(
-          new Date(lastDataPoint.time).getTime() + 60000
-        ).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Fetch real market data
+  const fetchPrices = React.useCallback(async () => {
+    try {
+      const res = await fetch(`/api/prices?symbol=${symbol}&interval=${interval}&limit=100`);
+      const data = await res.json();
+      
+      if (data.candles) {
+        const formattedData = data.candles.map((candle: Candle) => ({
+          time: new Date(candle.time).toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          }),
+          price: candle.close,
+        }));
+        
+        setChartData(formattedData);
+        setLastPrice(formattedData[formattedData.length - 1]?.price || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching prices:", error);
+    } finally {
+      setIsLoadingData(false);
+    }
+  }, [symbol, interval]);
 
-        const newData = [
-          ...prevData.slice(1),
-          { time: newTime, price: Math.max(newPrice, 30000) },
-        ];
-        return newData;
-      });
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
+  // Initial load and auto-refresh
+  React.useEffect(() => {
+    fetchPrices();
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    const refreshInterval = setInterval(fetchPrices, 30000);
+    
+    return () => clearInterval(refreshInterval);
+  }, [fetchPrices]);
 
   const handleAnalysis = async () => {
     if (!chartRef.current) return;
@@ -68,7 +93,7 @@ export function ChartCard() {
 
       const result = await getChartAnalysis({
         chartDataUri: dataUri,
-        assetName: "Bitcoin",
+        assetName: symbol.replace("USDT", ""),
         analysisType: "pattern",
       });
       setAnalysis(result);
@@ -80,51 +105,103 @@ export function ChartCard() {
     }
   };
 
+  const handleRefresh = () => {
+    setIsLoadingData(true);
+    fetchPrices();
+  };
+
+  const formatPrice = (price: number) => {
+    if (price >= 1000) {
+      return `$${(price / 1000).toFixed(1)}k`;
+    }
+    return `$${price.toFixed(2)}`;
+  };
+
+  const displaySymbol = symbol.replace("USDT", "/USD");
+
   return (
     <Card className="flex flex-col h-full">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div>
-            <CardTitle>Bitcoin/USD</CardTitle>
-            <CardDescription>Real-time price data</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              {displaySymbol}
+              {lastPrice > 0 && (
+                <span className="text-sm font-normal text-muted-foreground">
+                  {formatPrice(lastPrice)}
+                </span>
+              )}
+            </CardTitle>
+            <CardDescription>
+              Real-time price data • {interval} intervals
+            </CardDescription>
           </div>
-          <Button onClick={handleAnalysis} disabled={isLoading} size="sm" variant="outline">
-            {isLoading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Zap className="mr-2 h-4 w-4" />
-            )}
-            Analyze Pattern
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleRefresh} 
+              disabled={isLoadingData} 
+              size="sm" 
+              variant="ghost"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button onClick={handleAnalysis} disabled={isLoading} size="sm" variant="outline">
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="mr-2 h-4 w-4" />
+              )}
+              Analyze Pattern
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        <div className="h-[300px] w-full" ref={chartRef}>
-          <ChartContainer config={chartConfig} className="h-full w-full">
-            <LineChart
-              accessibilityLayer
-              data={chartData}
-              margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-            >
-              <CartesianGrid vertical={false} strokeDasharray="3 3" />
-              <XAxis dataKey="time" tickLine={false} axisLine={false} tickMargin={8} />
-              <YAxis
-                tickLine={false}
-                axisLine={false}
-                tickMargin={8}
-                tickFormatter={(value) => `$${(value as number / 1000)}k`}
-              />
-              <RechartsTooltip content={<ChartTooltipContent />} />
-              <Line
-                dataKey="price"
-                type="monotone"
-                stroke="var(--color-price)"
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
-          </ChartContainer>
-        </div>
+        {isLoadingData ? (
+          <div className="h-[300px] w-full flex items-center justify-center">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading market data...
+            </div>
+          </div>
+        ) : (
+          <div className="h-[300px] w-full" ref={chartRef}>
+            <ChartContainer config={chartConfig} className="h-full w-full">
+              <LineChart
+                accessibilityLayer
+                data={chartData}
+                margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
+              >
+                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="time" 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickMargin={8}
+                  interval="preserveStartEnd"
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickMargin={8}
+                  tickFormatter={formatPrice}
+                  domain={['dataMin - 100', 'dataMax + 100']}
+                />
+                <RechartsTooltip 
+                  content={<ChartTooltipContent />}
+                  formatter={(value: any) => [formatPrice(value), "Price"]}
+                />
+                <Line
+                  dataKey="price"
+                  type="monotone"
+                  stroke="var(--color-price)"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ChartContainer>
+          </div>
+        )}
       </CardContent>
       {analysis && (
         <CardFooter className="flex-col items-start gap-2 text-sm">

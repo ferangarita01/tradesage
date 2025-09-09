@@ -117,6 +117,7 @@ export function ChatWidget() {
             disabled={isLoading}
             autoComplete="off"
             className="h-12 pl-4 pr-14 rounded-full text-base"
+            suppressHydrationWarning
           />
           <Button type="submit" size="icon" disabled={isLoading} className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full">
             <Send className="h-4 w-4" />
