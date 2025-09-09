@@ -1,50 +1,135 @@
 "use client";
 
+import * as React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { BitcoinIcon, EthereumIcon } from "@/components/icons";
 import { Line, LineChart } from "recharts";
 import { ChartContainer } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePrices } from "@/hooks/usePrices";
 
-const assets = [
+type Asset = {
+  id: string;
+  icon: JSX.Element;
+  name: string;
+  symbol: string;
+  price?: string;
+  change?: string;
+  changeType?: "positive" | "negative";
+  data?: { value: number }[];
+};
+
+const initialAssets: Asset[] = [
   {
+    id: "bitcoin",
     icon: <BitcoinIcon className="w-8 h-8" />,
     name: "Bitcoin",
-    symbol: "BTC",
-    price: "$68,420.10",
-    change: "+1.25%",
-    changeType: "positive",
-    data: [
-      { value: 45 }, { value: 48 }, { value: 50 }, { value: 43 },
-      { value: 55 }, { value: 60 }, { value: 58 }, { value: 62 },
-    ],
+    symbol: "BTCUSDT",
   },
   {
+    id: "ethereum",
     icon: <EthereumIcon className="w-8 h-8" />,
     name: "Ethereum",
-    symbol: "ETH",
-    price: "$3,550.60",
-    change: "-0.45%",
-    changeType: "negative",
-    data: [
-      { value: 65 }, { value: 60 }, { value: 58 }, { value: 62 },
-      { value: 55 }, { value: 58 }, { value: 55 }, { value: 50 },
-    ],
+    symbol: "ETHUSDT",
   },
-    {
-    icon: <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-bold text-sm">AAPL</div>,
-    name: "Apple Inc.",
-    symbol: "AAPL",
-    price: "$214.29",
-    change: "+2.19%",
-    changeType: "positive",
-    data: [
-      { value: 20 }, { value: 25 }, { value: 22 }, { value: 30 },
-      { value: 35 }, { value: 38 }, { value: 42 }, { value: 40 },
-    ],
+  {
+    id: "cardano",
+    icon: <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center font-bold text-sm">ADA</div>,
+    name: "Cardano",
+    symbol: "ADAUSDT",
   },
 ];
+
+
+function AssetPriceRow({ asset }: { asset: Asset }) {
+  const { candles, loading, error } = usePrices(asset.symbol, "1m", 100);
+
+  const latestPrice = candles.length > 0 ? candles[candles.length - 1].close : 0;
+  const startPrice = candles.length > 0 ? candles[0].close : 0;
+  const priceChange = latestPrice - startPrice;
+  const percentageChange = startPrice > 0 ? (priceChange / startPrice) * 100 : 0;
+
+  const changeType = percentageChange >= 0 ? "positive" : "negative";
+
+  const chartData = candles.map(c => ({ value: c.close }));
+
+  if (loading) {
+    return (
+      <TableRow>
+        <TableCell className="p-2">
+          {asset.icon}
+        </TableCell>
+        <TableCell className="p-2 font-medium">
+          <div>{asset.name}</div>
+          <div className="text-xs text-muted-foreground">{asset.symbol.replace("USDT", "")}</div>
+        </TableCell>
+        <TableCell className="p-2 w-[80px] h-[40px]">
+          <Skeleton className="w-full h-full" />
+        </TableCell>
+        <TableCell className="p-2 text-right">
+          <Skeleton className="h-5 w-20 mb-1" />
+          <Skeleton className="h-4 w-12 ml-auto" />
+        </TableCell>
+      </TableRow>
+    );
+  }
+  
+  if (error || candles.length === 0) {
+      return (
+         <TableRow>
+             <TableCell className="p-2">
+                {asset.icon}
+             </TableCell>
+             <TableCell className="p-2 font-medium">
+                <div>{asset.name}</div>
+                <div className="text-xs text-muted-foreground">{asset.symbol.replace("USDT", "")}</div>
+             </TableCell>
+             <TableCell colSpan={2} className="p-2 text-right">
+                 <Badge variant="outline" className="text-xs border-dashed text-muted-foreground">
+                    Data unavailable
+                 </Badge>
+             </TableCell>
+         </TableRow>
+      )
+  }
+
+  return (
+    <TableRow key={asset.symbol}>
+      <TableCell className="p-2">
+        {asset.icon}
+      </TableCell>
+      <TableCell className="p-2 font-medium">
+        <div>{asset.name}</div>
+        <div className="text-xs text-muted-foreground">{asset.symbol.replace("USDT", "")}</div>
+      </TableCell>
+      <TableCell className="p-2 w-[80px] h-[40px]">
+        <ChartContainer config={{}} className="w-full h-full">
+          <LineChart
+            accessibilityLayer
+            data={chartData}
+            margin={{ top: 5, bottom: 5, left: 5, right: 5 }}
+          >
+            <Line
+              dataKey="value"
+              type="monotone"
+              stroke={changeType === 'positive' ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
+              strokeWidth={2}
+              dot={false}
+            />
+          </LineChart>
+        </ChartContainer>
+      </TableCell>
+      <TableCell className="p-2 text-right">
+        <div>${latestPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <Badge variant="outline" className={`text-xs ${changeType === 'positive' ? 'text-green-500 border-green-500/50' : 'text-red-500 border-red-500/50'}`}>
+          {percentageChange.toFixed(2)}%
+        </Badge>
+      </TableCell>
+    </TableRow>
+  )
+}
 
 export function AssetTrackerCard() {
   return (
@@ -56,37 +141,8 @@ export function AssetTrackerCard() {
       <CardContent>
         <Table>
           <TableBody>
-            {assets.map((asset) => (
-              <TableRow key={asset.symbol}>
-                <TableCell className="p-2">
-                    {asset.icon}
-                </TableCell>
-                <TableCell className="p-2 font-medium">
-                  <div>{asset.name}</div>
-                  <div className="text-xs text-muted-foreground">{asset.symbol}</div>
-                </TableCell>
-                <TableCell className="p-2 w-[80px] h-[40px]">
-                  <ChartContainer config={{}} className="w-full h-full">
-                    <LineChart
-                      accessibilityLayer
-                      data={asset.data}
-                      margin={{ top: 5, bottom: 5, left: 5, right: 5 }}
-                    >
-                      <Line
-                        dataKey="value"
-                        type="monotone"
-                        stroke={asset.changeType === 'positive' ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'}
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ChartContainer>
-                </TableCell>
-                <TableCell className="p-2 text-right">
-                  <div>{asset.price}</div>
-                  <Badge variant="outline" className={`text-xs ${asset.changeType === 'positive' ? 'text-green-500 border-green-500/50' : 'text-red-500 border-red-500/50'}`}>{asset.change}</Badge>
-                </TableCell>
-              </TableRow>
+            {initialAssets.map((asset) => (
+              <AssetPriceRow key={asset.id} asset={asset} />
             ))}
           </TableBody>
         </Table>

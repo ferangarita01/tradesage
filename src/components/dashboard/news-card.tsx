@@ -15,14 +15,8 @@ import type { AggregateRelevantNewsOutput } from "@/ai/flows/aggregate-relevant-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
-const MOCK_NEWS = [
-  "Global markets react to new inflation data.",
-  "Tech giants announce breakthrough in quantum computing.",
-  "Bitcoin halving event approaches, speculation rises.",
-];
-
 export function NewsCard() {
-  const [news, setNews] = React.useState<AggregateRelevantNewsOutput | null>({ newsItems: MOCK_NEWS, impactful: false });
+  const [news, setNews] = React.useState<AggregateRelevantNewsOutput | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleFetchNews = async () => {
@@ -33,6 +27,8 @@ export function NewsCard() {
       setNews(result);
     } catch (error) {
       console.error("Failed to fetch news:", error);
+      // In a real app, you might want to show a toast notification
+      setNews({ newsItems: ["Failed to fetch news. Please try again later."], impactful: false });
     } finally {
       setIsLoading(false);
     }
@@ -54,24 +50,33 @@ export function NewsCard() {
                 ) : (
                     <Newspaper className="mr-2 h-4 w-4" />
                 )}
-                Fetch News
+                {isLoading ? "Fetching..." : "Fetch News"}
             </Button>
         </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-48">
           <div className="space-y-4 relative">
-            {newsItems.length > 0 ? newsItems.map((item, index) => (
-              <div key={index}>
-                <p className="text-sm text-foreground leading-snug">
-                  {item}
-                </p>
-                {index < newsItems.length - 1 && <Separator className="mt-4" />}
+            {newsItems.length > 0 && !isLoading ? (
+              newsItems.map((item, index) => (
+                <div key={index}>
+                  <p className="text-sm text-foreground leading-snug">
+                    {item}
+                  </p>
+                  {index < newsItems.length - 1 && <Separator className="mt-4" />}
+                </div>
+              ))
+            ) : !isLoading && (
+              <div className="flex items-center justify-center h-full">
+                <p className="text-sm text-muted-foreground text-center">Click "Fetch News" to see the latest updates.</p>
               </div>
-            )) : !isLoading && <p className="text-sm text-muted-foreground">Click "Fetch News" to see the latest updates.</p>}
-             {isLoading && (
+            )}
+            {isLoading && (
               <div className="absolute inset-0 bg-card/50 backdrop-blur-sm flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="text-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                  <p className="text-sm text-muted-foreground mt-2">Fetching AI-curated news...</p>
+                </div>
               </div>
             )}
           </div>

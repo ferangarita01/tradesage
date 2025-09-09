@@ -54,9 +54,9 @@ export function AlertsCard() {
                                             <SelectValue placeholder="Select an asset" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="btc">Bitcoin (BTC)</SelectItem>
-                                            <SelectItem value="eth">Ethereum (ETH)</SelectItem>
-                                            <SelectItem value="aapl">Apple (AAPL)</SelectItem>
+                                            <SelectItem value="BTCUSDT">Bitcoin (BTC)</SelectItem>
+                                            <SelectItem value="ETHUSDT">Ethereum (ETH)</SelectItem>
+                                            <SelectItem value="ADAUSDT">Cardano (ADA)</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
@@ -65,7 +65,7 @@ export function AlertsCard() {
                                      <Select>
                                         <SelectTrigger className="col-span-3">
                                             <SelectValue placeholder="Select a condition" />
-                                        </SelectTrigger>
+                                        </Trigger>
                                         <SelectContent>
                                             <SelectItem value="above">Rises Above</SelectItem>
                                             <SelectItem value="below">Drops Below</SelectItem>
@@ -110,5 +110,5 @@ export function AlertsCard() {
                 </ScrollArea>
             </CardContent>
         </Card>
-    )
+    );
 }
