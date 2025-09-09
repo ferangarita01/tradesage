@@ -22,7 +22,6 @@ const ChatInputSchema = z.object({
         text: z.string()
     }))
   })).describe('The conversation history.'),
-  csvData: z.string().optional().describe("A CSV file's data, as a data URI that must include a MIME type and use Base64 encoding."),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
@@ -35,11 +34,42 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   return chatFlow(input);
 }
 
+const getMarketDataTool = ai.defineTool(
+    {
+        name: 'getMarketData',
+        description: 'Get historical market data (candles) for a given asset symbol. Use this to analyze trends, prices, or perform technical analysis.',
+        inputSchema: z.object({
+            symbol: z.string().describe('The asset symbol, e.g., BTCUSDT, ETHUSDT.'),
+            interval: z.string().optional().describe('The interval for the candles, e.g., 1m, 5m, 1h, 1d. Defaults to 15m.'),
+        }),
+        outputSchema: z.object({
+            candles: z.array(z.object({
+                time: z.number(),
+                open: z.number(),
+                high: z.number(),
+                low: z.number(),
+                close: z.number(),
+                volume: z.number(),
+            })).describe("An array of OHLCV candle data.")
+        })
+    },
+    async ({ symbol, interval = '15m' }) => {
+        console.log(`Using tool to fetch market data for ${symbol} with interval ${interval}`);
+        const response = await fetch(`http://localhost:3000/api/prices?symbol=${symbol}&interval=${interval}&limit=100`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch market data: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return { candles: data.candles };
+    }
+);
+
+
 const prompt = ai.definePrompt({
   name: 'chatPrompt',
   input: {schema: ChatInputSchema},
   output: {schema: ChatOutputSchema},
-  tools: [analyzeChartFlow, aggregateRelevantNewsFlow],
+  tools: [analyzeChartFlow, aggregateRelevantNewsFlow, getMarketDataTool],
   prompt: `You are a helpful AI assistant for an application called CryptoSage, which provides cryptocurrency and stock analysis tools.
 Your name is Sage. Be friendly, concise, and helpful.
 
@@ -49,15 +79,15 @@ The user is asking for help. Here is the conversation history:
   {{#if (eq role 'model')}}Sage: {{content.[0].text}}{{/if}}
 {{/each}}
 
-{{#if csvData}}
-The user has also provided a CSV file with the following data. Analyze it and use it to inform your response.
-CSV Data:
-{{media url=csvData}}
-{{/if}}
-
 User's new message: {{{message}}}
 
-Provide your response. Use the available tools if necessary to answer the user's question. If the user provides a CSV, your primary goal is to analyze it as requested.`,
+To answer the user's question, you have access to several tools:
+- \`getMarketData\`: Use this tool to get real-time and historical price data for assets like BTCUSDT, ETHUSDT, etc. This is your primary source for any price-related or chart analysis questions.
+- \`analyzeChart\`: Use this tool for technical analysis AFTER you have fetched the data with \`getMarketData\`.
+- \`aggregateRelevantNews\`: Use this for news-related queries.
+
+Think step-by-step. If the user asks about prices or to analyze a chart, first use \`getMarketData\` to fetch the data, and only then use other tools or formulate your response.
+If you use a tool, do not mention it in the response, just provide the final answer to the user.`,
 });
 
 const chatFlow = ai.defineFlow(
@@ -68,6 +98,6 @@ const chatFlow = ai.defineFlow(
   },
   async (input) => {
     const {output} = await prompt(input);
-    return output!;
+    return { response: output?.response || "I am sorry, I could not generate a response." };
   }
 );
