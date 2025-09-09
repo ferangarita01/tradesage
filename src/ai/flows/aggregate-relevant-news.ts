@@ -9,7 +9,7 @@
  * - AggregateRelevantNewsOutput - The return type for the aggregateRelevantNews function.
  */
 import { z } from 'zod';
-import { mistralLLM } from '../models/sageLLMs';
+import { modelsMap } from '../models/sageLLMs';
 import { ai } from '../genkit';
 
 const AggregateRelevantNewsInputSchema = z.object({
@@ -65,7 +65,7 @@ const aggregateRelevantNewsFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await aggregateRelevantNewsPrompt(input);
+      const {output} = await aggregateRelevantNewsPrompt(input, { model: modelsMap.mistral });
       return output!;
     } catch (error) {
       console.error('Error in aggregateRelevantNewsFlow:', error);

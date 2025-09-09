@@ -5,26 +5,16 @@
  * @fileOverview A simple chat flow for CryptoSage.
  *
  * - chat - A function that handles the chat process.
- * - ChatInput - The input type for the chat function.
+ * - ChatInput - The input type for the chat functionisnull,
  * - ChatOutput - The return type for the chat function.
  */
 
 import { z } from 'zod';
 import {
-  mistralLLM,
-  llamaLLM,
-  yiLLM,
-  gptLLM,
+  modelsMap,
 } from '@/ai/models/sageLLMs';
 import { ai } from '../genkit';
 
-
-const modelsMap: Record<string, any> = {
-  mistral: mistralLLM,
-  llama: llamaLLM,
-  yi: yiLLM,
-  gpt: gptLLM,
-};
 
 const ChatInputSchema = z.object({
   message: z.string().describe("The user's message to the chat bot."),
@@ -108,7 +98,8 @@ const chatFlow = ai.defineFlow(
   },
   async (input: ChatInput) => {
     const {message, history, model = 'mistral'} = input;
-    const modelToUse = modelsMap[model] || mistralLLM;
+    const modelKey = model as keyof typeof modelsMap;
+    const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
     const result = await ai.generate({
       model: modelToUse,

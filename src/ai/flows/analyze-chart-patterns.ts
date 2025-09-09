@@ -9,7 +9,7 @@
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
 import { z } from 'zod';
-import { mistralLLM } from '../models/sageLLMs';
+import { modelsMap } from '../models/sageLLMs';
 import { ai } from '../genkit';
 
 const CandleSchema = z.object({
@@ -67,7 +67,7 @@ const analyzeChartFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await analyzeChartPrompt(input);
+      const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
       return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
