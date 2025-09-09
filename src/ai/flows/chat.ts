@@ -1,3 +1,4 @@
+
 'use server';
 
 import { z } from 'zod';
@@ -37,7 +38,7 @@ const chatFlow = ai.defineFlow(
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
     // ⚠️ Tu versión de ai.generate NO soporta "history" directamente
-    // → concatenamos manualmente el historial al prompt
+    // → concatenamos manually el historial al prompt
     const historyPrompt = history
       .map(h => `${h.role}: ${h.content.map(c => c.text).join(' ')}`)
       .join('\n');
