@@ -1,34 +1,33 @@
 import { config } from 'dotenv';
-config(); // Carga las variables de entorno desde .env
+config();
 
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import openAI from '@genkit-ai/compat-oai';
 
-// Asegúrate de que la clave de API de OpenAI se esté utilizando si está disponible.
-const openAIApiKey = process.env.OPENAI_API_KEY;
-const openRouterApiKey = process.env.OPENROUTER_API_KEY;
-
 const plugins = [googleAI()];
 
-if (openAIApiKey) {
+// OpenRouter plugin
+if (process.env.OPENROUTER_API_KEY) {
   plugins.push(
-    openAI({
-      apiKey: openAIApiKey,
-    })
-  );
-}
-
-if (openRouterApiKey) {
-  plugins.push(
-    openAI({
-      apiKey: openRouterApiKey,
+    openAI('openrouter', {
+      apiKey: process.env.OPENROUTER_API_KEY,
       baseUrl: 'https://openrouter.ai/api/v1',
     })
   );
 }
 
+// OpenAI plugin
+if (process.env.OPENAI_API_KEY) {
+  plugins.push(
+    openAI('openai', {
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  );
+}
 
 export const ai = genkit({
   plugins,
+  logLevel: 'debug',
+  enableTracingAndMetrics: true,
 });

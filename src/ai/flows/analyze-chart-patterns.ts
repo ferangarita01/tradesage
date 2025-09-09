@@ -4,13 +4,13 @@
 /**
  * @fileOverview An AI agent that analyzes cryptocurrency charts to identify patterns and trends.
  *
- * - analyzeChart - A function that handles the chart analysis process.
+ * - analyzeChart - A Genkit tool that handles the chart analysis process.
  * - AnalyzeChartInput - The input type for the analyzeChart function.
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
 import { z } from 'zod';
-import { modelsMap } from '../models/sageLLMs';
 import { ai } from '../genkit';
+import { modelsMap } from '../models/sageLLMs';
 
 const CandleSchema = z.object({
   time: z.string(),
@@ -37,6 +37,21 @@ const AnalyzeChartOutputSchema = z.object({
 });
 export type AnalyzeChartOutput = z.infer<typeof AnalyzeChartOutputSchema>;
 
+
+const analyzeChartPrompt = ai.definePrompt({
+    name: 'analyzeChartPrompt',
+    input: {schema: AnalyzeChartInputSchema},
+    output: {schema: AnalyzeChartOutputSchema},
+    prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
+  Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
+
+  Candles (last 50 periods):
+  {{{json candles}}}
+
+  Provide a concise summary of your findings.`,
+  });
+
+
 const analyzeChartFlow = ai.defineFlow(
   {
     name: 'analyzeChartFlow',
@@ -44,25 +59,11 @@ const analyzeChartFlow = ai.defineFlow(
     outputSchema: AnalyzeChartOutputSchema,
   },
   async (input) => {
-    const analyzeChartPrompt = ai.definePrompt({
-        name: 'analyzeChartPrompt',
-        input: {schema: AnalyzeChartInputSchema},
-        output: {schema: AnalyzeChartOutputSchema},
-        prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
-      Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
-
-      Candles (last 50 periods):
-      {{{json candles}}}
-
-      Provide a concise summary of your findings.`,
-      });
-
     try {
         const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
         return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
-      // Return a default error response that matches the expected schema
       return {
         analysisResult: 'AI analysis failed or no clear pattern was detected.',
         confidenceLevel: 0.0,

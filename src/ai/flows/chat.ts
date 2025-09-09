@@ -6,6 +6,11 @@ import { modelsMap } from "@/ai/models/sageLLMs";
 import { analyzeChart } from "./analyze-chart-patterns";
 import { ai } from "../genkit";
 
+// Define message schema, now including 'tool' role
+const MessageSchema = z.object({
+  role: z.enum(["user", "assistant", "tool"]),
+  content: z.string(),
+});
 
 const CandleSchema = z.object({
   time: z.string(),
@@ -14,14 +19,7 @@ const CandleSchema = z.object({
 
 const ChatInputSchema = z.object({
   message: z.string(),
-  history: z
-    .array(
-      z.object({
-        role: z.enum(["user", "assistant", "tool"]),
-        content: z.string(),
-      })
-    )
-    .optional(),
+  history: z.array(MessageSchema).optional(),
   assetName: z.string().optional(),
   candles: z.array(CandleSchema).optional(),
   model: z.string().optional().default("mistral"),
@@ -33,7 +31,6 @@ const ChatOutputSchema = z.object({
 });
 export type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
-
 const chatFlow = ai.defineFlow(
   {
     name: 'chatFlow',
@@ -43,50 +40,52 @@ const chatFlow = ai.defineFlow(
   async (input) => {
     const { message, history = [], model = "mistral", assetName, candles } = input;
     
+    // Determine which model provider and model to use
     const isGptModel = model === 'gpt';
-    const apiKey = isGptModel ? process.env.OPENAI_API_KEY : process.env.OPENROUTER_API_KEY;
-
-    if (!apiKey) {
-      const errorMsg = isGptModel
-        ? "La clave OPENAI_API_KEY no está configurada."
-        : "La clave OPENROUTER_API_KEY no está configurada.";
-      console.error(`❌ ${errorMsg}`);
-      return { response: `Error: ${errorMsg}` };
-    }
-
     const modelKey = model as keyof typeof modelsMap;
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
-
+    const provider = isGptModel ? 'openai' : 'openrouter';
+    const llm = ai.model(`${provider}/${modelToUse}`);
+    
+    // System prompt to guide the AI
     const systemPrompt = `You are TradeSage, an AI assistant specializing in cryptocurrency analysis.
     If the user asks about the chart, technical analysis, patterns, or trends, you MUST use the 'analyzeChart' tool to get data-driven insights.
     Provide concise and helpful answers based on the tool's output. Do not make up analysis.
     The user is currently viewing the chart for: ${assetName || 'an unknown asset'}.`;
-    
-    // El modelo de IA a usar
-    const llm = ai.model(modelToUse);
    
-    // Ejecuta la generación de la respuesta con la herramienta de análisis de gráficos
-    const response = await ai.generate({
-      model: llm,
-      prompt: {
-        system: systemPrompt,
-        messages: [
-          ...history,
-          { role: "user", content: message },
-        ],
-      },
-      tools: [analyzeChart],
-      toolChoice: 'auto',
-      context: { // Proporciona el contexto para que las herramientas puedan usarlo
-        assetName: assetName,
-        candles: candles,
-      },
-    });
+    // Execute the generation of the response with the chart analysis tool
+    try {
+      const response = await ai.generate({
+        model: llm,
+        prompt: {
+          system: systemPrompt,
+          messages: [
+            ...history.map(h => ({ role: h.role, content: [{ text: h.content }] })),
+            { role: "user", content: [{ text: message }] },
+          ],
+        },
+        tools: [analyzeChart],
+        toolChoice: 'auto',
+        // Context needs to be correctly passed for tools to use.
+        // Genkit tools automatically get their input from the prompt, 
+        // so we must ensure the relevant data is available in the prompt context.
+        // We'll pass assetName and candles in the user's message if they exist.
+        context: {
+          assetName,
+          candles,
+        }
+      });
 
-    return { response: response.text };
+      return { response: response.text };
+    } catch (e) {
+        console.error(`Error during AI generation with ${provider}:`, e);
+        const errorMsg = isGptModel
+            ? "Error connecting to OpenAI. Check your API key and network."
+            : "Error connecting to OpenRouter. Check your API key and network.";
+        return { response: `Sorry, something went wrong. ${errorMsg}` };
+    }
   }
 );
-
 
 export async function chat(input: ChatInput): Promise<ChatOutput> {
   return chatFlow(input);
