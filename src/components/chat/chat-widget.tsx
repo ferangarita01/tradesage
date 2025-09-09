@@ -9,11 +9,11 @@ import { Sparkles, Send, User, Loader2, Bot } from "lucide-react";
 import { getChatResponse } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 
+// Updated Message type to match the new backend schema
 type Message = {
-  role: 'user' | 'model';
-  content: { text: string }[];
+  role: 'user' | 'assistant';
+  content: string;
 };
 
 export function ChatWidget() {
@@ -37,7 +37,7 @@ export function ChatWidget() {
     e.preventDefault();
     if (!inputValue.trim()) return;
 
-    const userMessage: Message = { role: 'user', content: [{ text: inputValue }] };
+    const userMessage: Message = { role: 'user', content: inputValue };
     setMessages((prev) => [...prev, userMessage]);
     setInputValue("");
     setIsLoading(true);
@@ -46,13 +46,14 @@ export function ChatWidget() {
       // Pass the previous messages as history and the selected model
       const chatHistory = messages;
       const response = await getChatResponse({ message: inputValue, history: chatHistory, model: model });
-      const botMessage: Message = { role: 'model', content: [{ text: response.response }] };
+      // Use 'assistant' role for the bot's response
+      const botMessage: Message = { role: 'assistant', content: response.response };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
       console.error("Failed to get chat response:", error);
       const errorMessage: Message = {
-        role: 'model',
-        content: [{ text: "Sorry, I couldn't get a response. Please try again." }]
+        role: 'assistant',
+        content: "Sorry, I couldn't get a response. Please try again."
       };
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
@@ -95,7 +96,7 @@ export function ChatWidget() {
                   message.role === 'user' ? "justify-end" : "justify-start"
                 )}
               >
-                {message.role === 'model' && (
+                {message.role === 'assistant' && (
                     <div className="p-2 bg-primary rounded-full text-primary-foreground">
                         <Sparkles className="w-5 h-5" />
                     </div>
@@ -108,7 +109,7 @@ export function ChatWidget() {
                       : "bg-background"
                   )}
                 >
-                  <p className="text-base whitespace-pre-wrap">{message.content[0].text}</p>
+                  <p className="text-base whitespace-pre-wrap">{message.content}</p>
                 </div>
                  {message.role === 'user' && (
                     <div className="p-2 bg-muted rounded-full text-muted-foreground">
