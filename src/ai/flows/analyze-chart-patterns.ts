@@ -8,9 +8,10 @@
  * - AnalyzeChartInput - The input type for the analyzeChart function.
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {generate} from 'genkit/generate';
+import {prompt} from 'genkit/prompt';
+import {flow} from 'genkit/flow';
+import {z} from 'genkit/zod';
 import { mistralLLM } from '../models/sageLLMs';
 
 const CandleSchema = z.object({
@@ -47,7 +48,7 @@ export async function analyzeChart(
   return analyzeChartFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const analyzeChartPrompt = prompt({
   name: 'analyzeChartPrompt',
   model: mistralLLM,
   input: {schema: AnalyzeChartInputSchema},
@@ -61,7 +62,7 @@ Candles (last 50 periods):
 Provide a concise summary of your findings.`,
 });
 
-const analyzeChartFlow = ai.defineFlow(
+const analyzeChartFlow = flow(
   {
     name: 'analyzeChartFlow',
     inputSchema: AnalyzeChartInputSchema,
@@ -69,8 +70,12 @@ const analyzeChartFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await prompt(input);
-      return output!;
+      const result = await generate({
+        prompt: analyzeChartPrompt,
+        model: mistralLLM,
+        input,
+      });
+      return result.output()!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
       // Return a default error response that matches the expected schema

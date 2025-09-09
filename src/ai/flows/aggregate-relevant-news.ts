@@ -8,9 +8,10 @@
  * - AggregateRelevantNewsInput - The input type for the aggregateRelevantNews function.
  * - AggregateRelevantNewsOutput - The return type for the aggregateRelevantNews function.
  */
-
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {generate} from 'genkit/generate';
+import {prompt} from 'genkit/prompt';
+import {flow} from 'genkit/flow';
+import {z} from 'genkit/zod';
 import { mistralLLM } from '../models/sageLLMs';
 
 const AggregateRelevantNewsInputSchema = z.object({
@@ -40,7 +41,7 @@ export async function aggregateRelevantNews(
   return aggregateRelevantNewsFlow(input);
 }
 
-const prompt = ai.definePrompt({
+const aggregateRelevantNewsPrompt = prompt({
   name: 'aggregateRelevantNewsPrompt',
   model: mistralLLM,
   input: {schema: AggregateRelevantNewsInputSchema},
@@ -59,7 +60,7 @@ Focus on:
 - Institutional adoption`,
 });
 
-const aggregateRelevantNewsFlow = ai.defineFlow(
+const aggregateRelevantNewsFlow = flow(
   {
     name: 'aggregateRelevantNewsFlow',
     inputSchema: AggregateRelevantNewsInputSchema,
@@ -67,8 +68,12 @@ const aggregateRelevantNewsFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await prompt(input);
-      return output!;
+      const result = await generate({
+        prompt: aggregateRelevantNewsPrompt,
+        model: mistralLLM,
+        input,
+      });
+      return result.output()!;
     } catch (error) {
       console.error('Error in aggregateRelevantNewsFlow:', error);
       return {newsItems: [], impactful: false};

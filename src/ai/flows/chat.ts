@@ -9,8 +9,9 @@
  * - ChatOutput - The return type for the chat function.
  */
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {generate} from 'genkit/generate';
+import {defineTool, Tool} from 'genkit/tool';
+import {z} from 'genkit/zod';
 import {
   mistralLLM,
   llamaLLM,
@@ -52,7 +53,7 @@ export async function chat(input: ChatInput): Promise<ChatOutput> {
   return chatFlow(input);
 }
 
-const getMarketDataTool = ai.defineTool(
+const getMarketDataTool: Tool = defineTool(
   {
     name: 'getMarketData',
     description:
@@ -98,7 +99,9 @@ const getMarketDataTool = ai.defineTool(
   }
 );
 
-const chatFlow = ai.defineFlow(
+import {flow} from 'genkit/flow';
+
+const chatFlow = flow(
   {
     name: 'chatFlow',
     inputSchema: ChatInputSchema,
@@ -108,7 +111,7 @@ const chatFlow = ai.defineFlow(
     const {message, history, model = 'mistral'} = input;
     const modelToUse = modelsMap[model] || mistralLLM;
 
-    const {output} = await ai.generate({
+    const result = await generate({
       model: modelToUse,
       prompt: message,
       history: history,
@@ -119,6 +122,8 @@ const chatFlow = ai.defineFlow(
         }),
       },
     });
+
+    const output = result.output();
 
     return {
       response:
