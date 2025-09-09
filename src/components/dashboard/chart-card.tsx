@@ -51,7 +51,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
 
     try {
       const result = await getChartAnalysis({
-        candles: chartData,
+        candles: chartData.map(c => ({ time: c.time, price: c.price })),
         assetName: symbol.replace("USDT", ""),
         analysisType: "pattern",
       });
