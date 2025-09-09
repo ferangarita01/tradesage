@@ -18,15 +18,23 @@ export function usePrices(symbol: string = "BTCUSDT", interval: string = "1m", l
     setLoading(true);
     try {
       const res = await fetch(`/api/prices?symbol=${symbol}&interval=${interval}&limit=${limit}`);
+      if (!res.ok) {
+        // If the API returns a non-200 status, log it and clear candles
+        console.error(`API Error: ${res.status} ${res.statusText}`);
+        setCandles([]);
+        return; // Stop execution
+      }
       const data = await res.json();
       if (data.candles) {
         setCandles(data.candles);
       } else {
-        setCandles([]); // Clear candles on error or invalid response
+        // If the response is OK but doesn't contain candles, clear the state
+        console.error("Invalid data format received:", data);
+        setCandles([]);
       }
     } catch (error) {
       console.error("Failed to fetch prices:", error);
-      setCandles([]); // Clear candles on fetch error
+      setCandles([]); // Clear candles on any fetch error
     } finally {
       setLoading(false);
     }
