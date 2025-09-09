@@ -9,8 +9,9 @@
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
 
+import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { chatComplete } from '@/ai/providers/chat';
+import { mistralModel } from '../genkit';
 
 const CandleSchema = z.object({
   time: z.string(),
@@ -18,7 +19,9 @@ const CandleSchema = z.object({
 });
 
 const AnalyzeChartInputSchema = z.object({
-  candles: z.array(CandleSchema).describe("The historical price data for the asset."),
+  candles: z
+    .array(CandleSchema)
+    .describe('The historical price data for the asset.'),
   assetName: z.string().describe('The name of the cryptocurrency asset.'),
   analysisType: z
     .enum(['trend', 'pattern'])
@@ -38,31 +41,43 @@ const AnalyzeChartOutputSchema = z.object({
 });
 export type AnalyzeChartOutput = z.infer<typeof AnalyzeChartOutputSchema>;
 
-export async function analyzeChart(input: AnalyzeChartInput): Promise<AnalyzeChartOutput> {
-  const userPrompt = `
-Analyze the following ${input.assetName} price data for ${input.analysisType} detection.
+export async function analyzeChart(
+  input: AnalyzeChartInput
+): Promise<AnalyzeChartOutput> {
+  return analyzeChartFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'analyzeChartPrompt',
+  model: mistralModel,
+  input: {schema: AnalyzeChartInputSchema},
+  output: {schema: AnalyzeChartOutputSchema},
+  prompt: `Analyze the following {{assetName}} price data for {{analysisType}} detection.
 Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
 
 Candles (last 50 periods):
-${JSON.stringify(input.candles.slice(-50))}
+{{{json candles}}}
 
-Provide a concise summary of your findings.
+Provide a concise summary of your findings.`,
+});
 
-Respond ONLY in valid JSON format with two keys: "analysisResult" (a string with your summary) and "confidenceLevel" (a number from 0.0 to 1.0).
-`;
-
-  try {
-    const raw = await chatComplete({
-      user: userPrompt,
-      model: "openai/gpt-4o-mini", // via OpenRouter
-      temperature: 0.1,
-    });
-
-    const parsed = AnalyzeChartOutputSchema.parse(JSON.parse(raw));
-    return parsed;
-  } catch (e) {
-    console.error("Chart analysis failed:", e);
-    // Return a default error response that matches the expected schema
-    return { analysisResult: "AI analysis failed or no clear pattern was detected.", confidenceLevel: 0.0 };
+const analyzeChartFlow = ai.defineFlow(
+  {
+    name: 'analyzeChartFlow',
+    inputSchema: AnalyzeChartInputSchema,
+    outputSchema: AnalyzeChartOutputSchema,
+  },
+  async input => {
+    try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (e) {
+      console.error('Chart analysis failed:', e);
+      // Return a default error response that matches the expected schema
+      return {
+        analysisResult: 'AI analysis failed or no clear pattern was detected.',
+        confidenceLevel: 0.0,
+      };
+    }
   }
-}
+);

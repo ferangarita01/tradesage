@@ -9,54 +9,69 @@
  * - AggregateRelevantNewsOutput - The return type for the aggregateRelevantNews function.
  */
 
-import { chatComplete } from '@/ai/providers/chat';
-import { z } from 'zod';
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
+import { mistralModel } from '../genkit';
 
 const AggregateRelevantNewsInputSchema = z.object({
   assets: z
     .array(z.string())
-    .describe('A list of cryptocurrency and stock symbols to search for news about.'),
+    .describe(
+      'A list of cryptocurrency and stock symbols to search for news about.'
+    ),
 });
-export type AggregateRelevantNewsInput = z.infer<typeof AggregateRelevantNewsInputSchema>;
+export type AggregateRelevantNewsInput = z.infer<
+  typeof AggregateRelevantNewsInputSchema
+>;
 
 const AggregateRelevantNewsOutputSchema = z.object({
   newsItems: z.array(z.string()).describe('A list of relevant news articles.'),
-  impactful: z.boolean().describe('Whether or not the news will have an impact on prices'),
+  impactful: z
+    .boolean()
+    .describe('Whether or not the news will have an impact on prices'),
 });
-export type AggregateRelevantNewsOutput = z.infer<typeof AggregateRelevantNewsOutputSchema>;
+export type AggregateRelevantNewsOutput = z.infer<
+  typeof AggregateRelevantNewsOutputSchema
+>;
 
-export async function aggregateRelevantNews(input: AggregateRelevantNewsInput): Promise<AggregateRelevantNewsOutput> {
-  const systemPrompt = `You are an AI assistant specialized in financial markets and news analysis.
+export async function aggregateRelevantNews(
+  input: AggregateRelevantNewsInput
+): Promise<AggregateRelevantNewsOutput> {
+  return aggregateRelevantNewsFlow(input);
+}
+
+const prompt = ai.definePrompt({
+  name: 'aggregateRelevantNewsPrompt',
+  model: mistralModel,
+  input: {schema: AggregateRelevantNewsInputSchema},
+  output: {schema: AggregateRelevantNewsOutputSchema},
+  prompt: `You are an AI assistant specialized in financial markets and news analysis.
 Your task is to aggregate relevant news articles for cryptocurrencies and stocks.
-Only include news that could significantly impact asset prices.`;
+Only include news that could significantly impact asset prices.
 
-  const userPrompt = `Find and aggregate relevant news articles for these assets: ${input.assets.join(", ")}.
+Find and aggregate relevant news articles for these assets: {{assets}}.
 
 Focus on:
 - Market-moving events
 - Regulatory changes
 - Major partnerships or developments
 - Technical breakthroughs
-- Institutional adoption
+- Institutional adoption`,
+});
 
-RESPOND ONLY in valid JSON format:
-{
-  "newsItems": ["news headline 1", "news headline 2", "..."],
-  "impactful": true/false
-}`;
-
-  try {
-    const raw = await chatComplete({
-      system: systemPrompt,
-      user: userPrompt,
-      model: "openai/gpt-4o-mini",
-      temperature: 0.2
-    });
-
-    const parsed = JSON.parse(raw);
-    return AggregateRelevantNewsOutputSchema.parse(parsed);
-  } catch (error) {
-    console.error("Error in aggregateRelevantNewsWithOpenRouter:", error);
-    return { newsItems: [], impactful: false };
+const aggregateRelevantNewsFlow = ai.defineFlow(
+  {
+    name: 'aggregateRelevantNewsFlow',
+    inputSchema: AggregateRelevantNewsInputSchema,
+    outputSchema: AggregateRelevantNewsOutputSchema,
+  },
+  async input => {
+    try {
+      const {output} = await prompt(input);
+      return output!;
+    } catch (error) {
+      console.error('Error in aggregateRelevantNewsFlow:', error);
+      return {newsItems: [], impactful: false};
+    }
   }
-}
+);
