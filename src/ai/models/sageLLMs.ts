@@ -1,6 +1,4 @@
 
-'use server';
-
 import type {ModelReference} from '@genkit-ai/core';
 
 // Mistral‑7B Instruct (gratis OSS)
