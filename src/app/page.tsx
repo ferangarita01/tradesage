@@ -4,7 +4,7 @@
 import { useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import { AlertsCard } from "@/components/dashboard/alerts-card";
+import { StrategiesCard } from "@/components/dashboard/strategies-card";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
@@ -27,7 +27,7 @@ export default function Home() {
               />
             </div>
             <div className="grid gap-6 md:gap-8 grid-cols-1">
-                <AlertsCard />
+                <StrategiesCard />
             </div>
           </div>
         </main>
