@@ -13,7 +13,5 @@ export const ai = genkit({
     }),
     googleAI(),
   ],
-  models: [mistralLLM, llamaLLM, yiLLM, gptLLM],
-  // Log all errors and warnings to the console
   logLevel: 'debug',
 });
