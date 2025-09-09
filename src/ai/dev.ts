@@ -1,6 +1,3 @@
-import { config } from 'dotenv';
-config();
-
 // This MUST be the first import
 import '@/ai/genkit';
 

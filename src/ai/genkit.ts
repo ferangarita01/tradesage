@@ -1,3 +1,6 @@
+import { config } from 'dotenv';
+config(); // Carga las variables de entorno desde .env
+
 import {genkit} from 'genkit';
 import {googleAI} from '@genkit-ai/googleai';
 import openAI from '@genkit-ai/compat-oai';
