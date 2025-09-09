@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview A simple chat flow for CryptoSage.
+ * @fileOverview A simple chat flow for TradeSage.
  *
  * - chat - A function that handles the chat process.
  * - ChatInput - The input type for the chat functionisnull,

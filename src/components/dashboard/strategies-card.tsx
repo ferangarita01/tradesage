@@ -106,7 +106,7 @@ export function StrategiesCard() {
                                 <DialogHeader>
                                 <DialogTitle>Crear Nueva Estrategia</DialogTitle>
                                 <DialogDescription>
-                                    Define una nueva regla o patrón para que CryptoSage lo identifique por ti.
+                                    Define una nueva regla o patrón para que TradeSage lo identifique por ti.
                                 </DialogDescription>
                                 </DialogHeader>
                                 <div className="grid gap-4 py-4">

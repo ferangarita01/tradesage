@@ -66,7 +66,7 @@ export function ChatWidget() {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold flex items-center gap-2">
                 <Sparkles className="text-primary w-6 h-6" />
-                Chat with Sage
+                Chat with TradeSage
             </h2>
             <div className="flex items-center gap-2">
                 <Bot className="w-4 h-4 text-muted-foreground" />
@@ -123,7 +123,7 @@ export function ChatWidget() {
                        <Loader2 className="w-5 h-5 animate-spin" />
                     </div>
                     <div className="p-3 rounded-xl bg-background">
-                        <p className="text-base text-muted-foreground">Sage is thinking...</p>
+                        <p className="text-base text-muted-foreground">TradeSage is thinking...</p>
                     </div>
                 </div>
             )}
@@ -135,7 +135,7 @@ export function ChatWidget() {
           <Input
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Ask Sage anything..."
+            placeholder="Ask TradeSage anything..."
             disabled={isLoading}
             autoComplete="off"
             className="h-12 pr-14 rounded-full text-base"
