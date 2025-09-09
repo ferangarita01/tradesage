@@ -78,6 +78,7 @@ const getMarketDataTool = ai.defineTool(
     console.log(
       `Using tool to fetch market data for ${symbol} with interval ${interval}`
     );
+    // In a real app, you would fetch this from a reliable financial data API
     const response = await fetch(
       `http://localhost:9002/api/prices?symbol=${symbol}&interval=${interval}&limit=100`
     );
