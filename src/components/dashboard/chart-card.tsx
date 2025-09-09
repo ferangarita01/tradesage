@@ -59,7 +59,9 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
         }));
         
         setChartData(formattedData);
-        setLastPrice(formattedData[formattedData.length - 1]?.price || 0);
+        if (formattedData.length > 0) {
+          setLastPrice(formattedData[formattedData.length - 1].price);
+        }
       }
     } catch (error) {
       console.error("Error fetching prices:", error);
@@ -79,20 +81,13 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
   }, [fetchPrices]);
 
   const handleAnalysis = async () => {
-    if (!chartRef.current) return;
+    if (chartData.length === 0) return;
     setIsLoading(true);
     setAnalysis(null);
 
     try {
-      const svgElement = chartRef.current.querySelector("svg");
-      if (!svgElement) throw new Error("Chart SVG not found");
-
-      svgElement.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-      const svgString = new XMLSerializer().serializeToString(svgElement);
-      const dataUri = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgString)));
-
       const result = await getChartAnalysis({
-        chartDataUri: dataUri,
+        candles: chartData,
         assetName: symbol.replace("USDT", ""),
         analysisType: "pattern",
       });
@@ -145,7 +140,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
             </Button>
-            <Button onClick={handleAnalysis} disabled={isLoading} size="sm" variant="outline">
+            <Button onClick={handleAnalysis} disabled={isLoading || isLoadingData || chartData.length === 0} size="sm" variant="outline">
               {isLoading ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
