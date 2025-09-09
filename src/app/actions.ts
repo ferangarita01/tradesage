@@ -2,6 +2,7 @@
 
 import { analyzeChart, type AnalyzeChartInput } from "@/ai/flows/analyze-chart-patterns";
 import { aggregateRelevantNews, type AggregateRelevantNewsInput } from "@/ai/flows/aggregate-relevant-news";
+import { chat, type ChatInput } from "@/ai/flows/chat";
 
 export async function getChartAnalysis(input: AnalyzeChartInput) {
   "use server";
@@ -29,4 +30,15 @@ export async function getNews(input: AggregateRelevantNewsInput) {
         impactful: false,
     }
   }
+}
+
+export async function getChatResponse(input: ChatInput) {
+    "use server";
+    try {
+        const response = await chat(input);
+        return response;
+    } catch (error) {
+        console.error(error);
+        return { response: "Sorry, I'm having trouble connecting to the AI. Please try again later." };
+    }
 }

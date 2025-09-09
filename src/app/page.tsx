@@ -3,6 +3,7 @@ import { ChartCard } from "@/components/dashboard/chart-card";
 import { NewsCard } from "@/components/dashboard/news-card";
 import { AssetTrackerCard } from "@/components/dashboard/asset-tracker-card";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
+import { ChatWidget } from "@/components/chat/chat-widget";
 
 export default function Home() {
   return (
@@ -24,6 +25,7 @@ export default function Home() {
           </div>
         </div>
       </main>
+      <ChatWidget />
     </div>
   );
 }
