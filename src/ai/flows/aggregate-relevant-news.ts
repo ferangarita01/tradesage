@@ -65,7 +65,7 @@ const aggregateRelevantNewsFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await aggregateRelevantNewsPrompt(input, { model: modelsMap.mistral });
+      const {output} = await aggregateRelevantNewsPrompt(input, { model: ai.model(modelsMap.mistral) });
       return output!;
     } catch (error) {
       console.error('Error in aggregateRelevantNewsFlow:', error);

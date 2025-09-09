@@ -102,7 +102,7 @@ const chatFlow = ai.defineFlow(
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
     const result = await ai.generate({
-      model: modelToUse,
+      model: ai.model(modelToUse),
       prompt: message,
       history: history,
       tools: [getMarketDataTool],

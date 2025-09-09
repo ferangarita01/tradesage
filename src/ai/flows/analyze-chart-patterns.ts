@@ -67,7 +67,7 @@ const analyzeChartFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
+      const {output} = await analyzeChartPrompt(input, { model: ai.model(modelsMap.mistral) });
       return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
