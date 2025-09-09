@@ -1,6 +1,3 @@
-
-'use server';
-
 // src/ai/models/sageLLMs.ts
 
 // Mistral‑7B Instruct (gratis OSS ✅ versión estable v0.2)
