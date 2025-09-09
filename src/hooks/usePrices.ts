@@ -43,7 +43,7 @@ export function usePrices(symbol: string = "BTCUSDT", interval: string = "1m", l
   useEffect(() => {
     load();
 
-    const id = setInterval(load, 30000); // refresh every 30s
+    const id = setInterval(load, 60000); // refresh every 60s
     return () => clearInterval(id);
   }, [load]);
 
