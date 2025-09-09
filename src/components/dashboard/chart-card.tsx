@@ -1,64 +1,35 @@
 "use client";
 
 import * as React from "react";
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  ChartContainer,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap, RefreshCw } from "lucide-react";
 import { getChartAnalysis } from "@/app/actions";
 import type { AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
 import { usePrices } from "@/hooks/usePrices";
-
-const chartConfig = {
-  price: {
-    label: "Price",
-    color: "hsl(var(--primary))",
-  },
-};
+import TradingViewChart from "@/components/ui/tradingview-chart";
 
 export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: string; interval?: string }) {
   const { candles, loading: isLoadingData, refetch: fetchPrices } = usePrices(symbol, interval);
   const [analysis, setAnalysis] = React.useState<AnalyzeChartOutput | null>(null);
   const [isLoadingAnalysis, setIsLoadingAnalysis] = React.useState(false);
-  
-  const chartData = React.useMemo(() => {
-    return candles.map((candle) => ({
-      time: new Date(candle.time).toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      }),
-      price: candle.close,
-    }));
-  }, [candles]);
 
-  const lastPrice = chartData.length > 0 ? chartData[chartData.length - 1].price : 0;
+  const lastPrice = candles.length > 0 ? candles[candles.length - 1].close : 0;
 
   const handleAnalysis = async () => {
-    if (chartData.length === 0) return;
+    if (candles.length === 0) return;
     setIsLoadingAnalysis(true);
     setAnalysis(null);
 
     try {
       const result = await getChartAnalysis({
-        candles: chartData.map(c => ({ time: c.time, price: c.price })),
+        candles: candles.map(c => ({ time: new Date(c.time).toLocaleTimeString(), price: c.close })),
         assetName: symbol.replace("USDT", ""),
         analysisType: "pattern",
       });
       setAnalysis(result);
     } catch (error) {
       console.error("Analysis failed:", error);
-      // You could add a toast notification here to inform the user.
     } finally {
       setIsLoadingAnalysis(false);
     }
@@ -103,7 +74,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingData ? 'animate-spin' : ''}`} />
             </Button>
-            <Button onClick={handleAnalysis} disabled={isLoadingAnalysis || isLoadingData || chartData.length === 0} size="sm" variant="outline">
+            <Button onClick={handleAnalysis} disabled={isLoadingAnalysis || isLoadingData || candles.length === 0} size="sm" variant="outline">
               {isLoadingAnalysis ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
@@ -115,7 +86,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
         </div>
       </CardHeader>
       <CardContent className="flex-grow">
-        {isLoadingData && chartData.length === 0 ? (
+        {isLoadingData && candles.length === 0 ? (
           <div className="h-[300px] w-full flex items-center justify-center">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -124,40 +95,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
           </div>
         ) : (
           <div className="h-[300px] w-full">
-            <ChartContainer config={chartConfig} className="h-full w-full">
-              <LineChart
-                accessibilityLayer
-                data={chartData}
-                margin={{ top: 5, right: 20, left: -10, bottom: 5 }}
-              >
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="time" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8}
-                  interval="preserveStartEnd"
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickMargin={8}
-                  tickFormatter={formatPrice}
-                  domain={['auto', 'auto']}
-                />
-                <RechartsTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value: any) => [formatPrice(value), "Price"]}
-                />
-                <Line
-                  dataKey="price"
-                  type="monotone"
-                  stroke="var(--color-price)"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ChartContainer>
+            <TradingViewChart data={candles} />
           </div>
         )}
       </CardContent>
