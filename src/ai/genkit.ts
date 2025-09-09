@@ -2,11 +2,13 @@
 'use server';
 
 import {genkit} from 'genkit';
-import {openai} from '@genkit-ai/openai';
+import {googleAI} from '@genkit-ai/googleai';
+import openAI from '@genkit-ai/compat-oai';
 
 export const ai = genkit({
   plugins: [
-    openai({
+    googleAI(),
+    openAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseUrl: 'https://openrouter.ai/api/v1',
     }),
