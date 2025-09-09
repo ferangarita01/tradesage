@@ -1,10 +1,10 @@
+
 "use client";
 
 import { useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { ChartCard } from "@/components/dashboard/chart-card";
 import { NewsCard } from "@/components/dashboard/news-card";
-import { AssetTrackerCard } from "@/components/dashboard/asset-tracker-card";
 import { AlertsCard } from "@/components/dashboard/alerts-card";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
@@ -19,18 +19,13 @@ export default function Home() {
       <Header />
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 transition-all duration-300">
-          <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-3 xl:grid-cols-4">
-            <div className={cn("lg:col-span-2 xl:col-span-3", !isChatOpen && "lg:col-span-3 xl:col-span-4")}>
+          <div className="grid gap-6 md:gap-8">
+            <div className="col-span-1">
               <ChartCard />
             </div>
-            <div className={cn("lg:col-span-1 xl:col-span-1", !isChatOpen && "lg:col-span-1 xl:col-span-1")}>
-              <AssetTrackerCard />
-            </div>
-            <div className={cn("lg:col-span-3 xl:col-span-4", !isChatOpen && "lg:col-span-4 xl:col-span-4")}>
-              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
+            <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
                 <NewsCard />
                 <AlertsCard />
-              </div>
             </div>
           </div>
         </main>
