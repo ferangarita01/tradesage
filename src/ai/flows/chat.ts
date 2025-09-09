@@ -10,6 +10,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { analyzeChartFlow } from './analyze-chart-patterns';
+import { aggregateRelevantNewsFlow } from './aggregate-relevant-news';
 
 const ChatInputSchema = z.object({
   message: z.string().describe('The user\'s message to the chat bot.'),
@@ -35,6 +37,7 @@ const prompt = ai.definePrompt({
   name: 'chatPrompt',
   input: {schema: ChatInputSchema},
   output: {schema: ChatOutputSchema},
+  tools: [analyzeChartFlow, aggregateRelevantNewsFlow],
   prompt: `You are a helpful AI assistant for an application called CryptoSage, which provides cryptocurrency and stock analysis tools.
 Your name is Sage. Be friendly, concise, and helpful.
 
@@ -46,7 +49,7 @@ The user is asking for help. Here is the conversation history:
 
 User's new message: {{{message}}}
 
-Provide your response.`,
+Provide your response. Use the available tools if necessary to answer the user's question.`,
 });
 
 const chatFlow = ai.defineFlow(

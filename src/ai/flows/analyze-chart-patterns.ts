@@ -1,4 +1,3 @@
-// src/ai/flows/analyze-chart-patterns.ts
 'use server';
 
 /**
@@ -15,8 +14,9 @@ import {z} from 'genkit';
 const AnalyzeChartInputSchema = z.object({
   chartDataUri: z
     .string()
+    .optional()
     .describe(
-      "A chart of a cryptocurrency, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A chart of a cryptocurrency, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'. This can be optional if you are just providing an asset name."
     ),
   assetName: z.string().describe('The name of the cryptocurrency asset.'),
   analysisType: z
@@ -48,11 +48,15 @@ const analyzeChartPrompt = ai.definePrompt({
 You will analyze the provided chart image of {{assetName}} to identify patterns and trends, based on the specified analysis type.
 
 Analysis Type: {{analysisType}}
+{{#if chartDataUri}}
 Chart Image: {{media url=chartDataUri}}
+{{/if}}
 
 Based on the chart, provide a detailed analysis result and a confidence level (0-1) for the accuracy of the analysis.
 
 Consider factors such as support and resistance levels, trend lines, chart patterns (e.g., head and shoulders, double top, etc.), and volume to generate the analysis.
+
+If no chart is provided, perform a general analysis based on the asset name.
 
 Ensure that the analysisResult is a well-structured paragraph.
 
@@ -64,7 +68,7 @@ Confidence Level guidelines:
 `,
 });
 
-const analyzeChartFlow = ai.defineFlow(
+export const analyzeChartFlow = ai.defineFlow(
   {
     name: 'analyzeChartFlow',
     inputSchema: AnalyzeChartInputSchema,

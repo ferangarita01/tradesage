@@ -56,7 +56,7 @@ const prompt = ai.definePrompt({
   `,
 });
 
-const aggregateRelevantNewsFlow = ai.defineFlow(
+export const aggregateRelevantNewsFlow = ai.defineFlow(
   {
     name: 'aggregateRelevantNewsFlow',
     inputSchema: AggregateRelevantNewsInputSchema,
