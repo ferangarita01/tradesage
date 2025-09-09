@@ -143,7 +143,7 @@ export function ChartCard({ symbol = "BTCUSDT", interval = "1m" }: { symbol?: st
                   axisLine={false}
                   tickMargin={8}
                   tickFormatter={formatPrice}
-                  domain={['dataMin - 100', 'dataMax + 100']}
+                  domain={['auto', 'auto']}
                 />
                 <RechartsTooltip 
                   content={<ChartTooltipContent />}
