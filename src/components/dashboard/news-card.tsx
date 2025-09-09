@@ -22,7 +22,7 @@ const MOCK_NEWS = [
 ];
 
 export function NewsCard() {
-  const [news, setNews] = React.useState<AggregateRelevantNewsOutput | null>(null);
+  const [news, setNews] = React.useState<AggregateRelevantNewsOutput | null>({ newsItems: MOCK_NEWS, impactful: false });
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleFetchNews = async () => {
@@ -30,8 +30,6 @@ export function NewsCard() {
     setNews(null);
     try {
       const result = await getNews({ assets: ["BTC", "ETH", "Stock Market"] });
-      // The Genkit flow returns mock data, so we'll supplement it for a better demo
-      result.newsItems = [...result.newsItems, ...MOCK_NEWS];
       setNews(result);
     } catch (error) {
       console.error("Failed to fetch news:", error);
@@ -40,7 +38,7 @@ export function NewsCard() {
     }
   };
 
-  const newsItems = news?.newsItems || MOCK_NEWS;
+  const newsItems = news?.newsItems || [];
 
   return (
     <Card>
@@ -62,15 +60,15 @@ export function NewsCard() {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-48">
-          <div className="space-y-4">
-            {newsItems.map((item, index) => (
+          <div className="space-y-4 relative">
+            {newsItems.length > 0 ? newsItems.map((item, index) => (
               <div key={index}>
                 <p className="text-sm text-foreground leading-snug">
                   {item}
                 </p>
                 {index < newsItems.length - 1 && <Separator className="mt-4" />}
               </div>
-            ))}
+            )) : !isLoading && <p className="text-sm text-muted-foreground">Click "Fetch News" to see the latest updates.</p>}
              {isLoading && (
               <div className="absolute inset-0 bg-card/50 backdrop-blur-sm flex items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
