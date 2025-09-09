@@ -4,6 +4,7 @@
 import { z } from 'zod';
 import { modelsMap } from '@/ai/models/sageLLMs';
 import { ai } from '../genkit';
+import { MessageData } from '@genkit-ai/core';
 
 const ChatInputSchema = z.object({
   message: z.string(),
@@ -37,17 +38,16 @@ const chatFlow = ai.defineFlow(
     const modelKey = model as keyof typeof modelsMap;
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
 
-    // ⚠️ Tu versión de ai.generate NO soporta "history" directamente
-    // → concatenamos manually el historial al prompt
-    const historyPrompt = history
-      .map(h => `${h.role}: ${h.content.map(c => c.text).join(' ')}`)
-      .join('\n');
+    // Convert history to the format expected by ai.chat
+    const genkitHistory: MessageData[] = history.map(h => ({
+      role: h.role,
+      content: h.content,
+    }));
 
-    const finalPrompt = `${historyPrompt}\nuser: ${message}`;
-
-    const result = await ai.generate({
+    const result = await ai.chat({
       model: modelToUse,
-      prompt: finalPrompt,
+      history: genkitHistory,
+      prompt: message,
     });
 
     return {
