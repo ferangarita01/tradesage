@@ -115,18 +115,13 @@ const chatFlow = ai.defineFlow(
       prompt: message,
       history: history,
       tools: [getMarketDataTool],
-      output: {
-        schema: z.object({
-          response: z.string(),
-        }),
-      },
     });
 
-    const output = result.output;
+    const output = result.text;
 
     return {
       response:
-        output?.response || 'I am sorry, I could not generate a response.',
+        output || 'I am sorry, I could not generate a response.',
     };
   }
 );

@@ -65,12 +65,8 @@ const aggregateRelevantNewsFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const result = await ai.generate({
-        prompt: 'aggregateRelevantNewsPrompt',
-        model: mistralLLM,
-        input,
-      });
-      return result.output!;
+      const {output} = await aggregateRelevantNewsPrompt(input);
+      return output!;
     } catch (error) {
       console.error('Error in aggregateRelevantNewsFlow:', error);
       return {newsItems: [], impactful: false};

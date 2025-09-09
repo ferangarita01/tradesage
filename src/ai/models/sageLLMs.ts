@@ -1,6 +1,4 @@
 
-import type { ModelReference } from 'genkit';
-
 // Mistral‑7B Instruct (gratis OSS)
 export const mistralLLM = 'mistralai/mistral-7b-instruct-v0.2';
 

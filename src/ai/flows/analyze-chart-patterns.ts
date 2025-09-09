@@ -67,12 +67,8 @@ const analyzeChartFlow = ai.defineFlow(
   },
   async input => {
     try {
-      const result = await ai.generate({
-        prompt: 'analyzeChartPrompt',
-        model: mistralLLM,
-        input,
-      });
-      return result.output!;
+      const {output} = await analyzeChartPrompt(input);
+      return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
       // Return a default error response that matches the expected schema
