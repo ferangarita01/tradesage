@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -21,6 +22,7 @@ const ChatInputSchema = z.object({
         text: z.string()
     }))
   })).describe('The conversation history.'),
+  csvData: z.string().optional().describe("A CSV file's data, as a data URI that must include a MIME type and use Base64 encoding."),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
@@ -47,9 +49,15 @@ The user is asking for help. Here is the conversation history:
   {{#if (eq role 'model')}}Sage: {{content.[0].text}}{{/if}}
 {{/each}}
 
+{{#if csvData}}
+The user has also provided a CSV file with the following data. Analyze it and use it to inform your response.
+CSV Data:
+{{media url=csvData}}
+{{/if}}
+
 User's new message: {{{message}}}
 
-Provide your response. Use the available tools if necessary to answer the user's question.`,
+Provide your response. Use the available tools if necessary to answer the user's question. If the user provides a CSV, your primary goal is to analyze it as requested.`,
 });
 
 const chatFlow = ai.defineFlow(
