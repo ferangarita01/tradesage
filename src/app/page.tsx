@@ -1,10 +1,9 @@
-
 "use client";
 
 import { useState } from "react";
 import { Header } from "@/components/dashboard/header";
 import { ChartCard } from "@/components/dashboard/chart-card";
-import { StrategiesCard } from "@/components/dashboard/strategies-card";
+import PatternDetector from "@/components/dashboard/pattern-detector";
 import { ChatWidget } from "@/components/chat/chat-widget";
 import { Button } from "@/components/ui/button";
 import { PanelLeftClose, PanelRightClose } from "lucide-react";
@@ -13,6 +12,21 @@ import { cn } from "@/lib/utils";
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(true);
   const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
+
+  // Datos de ejemplo para el detector de patrones
+  // Reemplaza esto con tu hook usePrices() cuando esté listo
+  const mockCandleData = [
+    { open: 45000, high: 46000, low: 44500, close: 45800 },
+    { open: 45800, high: 47000, low: 45200, close: 46500 },
+    { open: 46500, high: 47500, low: 46000, close: 47200 },
+    { open: 47200, high: 48000, low: 46800, close: 47000 },
+    { open: 47000, high: 47800, low: 46200, close: 46800 },
+    // Agrega más datos reales aquí
+  ];
+
+  const handlePatternsDetected = (patterns: any[]) => {
+    console.log('Patrones detectados para', selectedSymbol, ':', patterns);
+  };
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -27,7 +41,10 @@ export default function Home() {
               />
             </div>
             <div className="grid gap-6 md:gap-8 grid-cols-1">
-                <StrategiesCard />
+              <PatternDetector 
+                candles={mockCandleData}
+                onPatternsDetected={handlePatternsDetected}
+              />
             </div>
           </div>
         </main>
