@@ -44,7 +44,7 @@ const chatFlow = ai.defineFlow(
     const isGptModel = model === 'gpt';
     const modelKey = model as keyof typeof modelsMap;
     const modelToUse = modelsMap[modelKey] || modelsMap.mistral;
-    const provider = isGpt_model ? 'openai' : 'openrouter';
+    const provider = isGptModel ? 'openai' : 'openrouter';
     const llm = ai.model(`${provider}/${modelToUse}`);
     
     // System prompt to guide the AI
@@ -77,7 +77,7 @@ const chatFlow = ai.defineFlow(
       return { response: response.text };
     } catch (e) {
         console.error(`Error during AI generation with ${provider}:`, e);
-        const errorMsg = isGpt_model
+        const errorMsg = isGptModel
             ? "Error connecting to OpenAI. Check your API key and network."
             : "Error connecting to OpenRouter. Check your API key and network.";
         return { response: `Sorry, something went wrong. ${errorMsg}` };
