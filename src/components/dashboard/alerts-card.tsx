@@ -20,7 +20,7 @@ import { Separator } from "../ui/separator";
 
 const alerts = [
     { asset: "Bitcoin", condition: "rises above", value: "$70,000" },
-    { asset: "Ethereum", condition: "drops below", value: "$3,400" },
+    { asset: "Ethereum", condition: "drops below", value: "$3,400" }
 ];
 
 export function AlertsCard() {
@@ -65,7 +65,7 @@ export function AlertsCard() {
                                      <Select>
                                         <SelectTrigger className="col-span-3">
                                             <SelectValue placeholder="Select a condition" />
-                                        </Trigger>
+                                        </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="above">Rises Above</SelectItem>
                                             <SelectItem value="below">Drops Below</SelectItem>
