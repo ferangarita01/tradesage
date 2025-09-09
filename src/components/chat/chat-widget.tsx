@@ -5,9 +5,11 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Sparkles, Send, User, Loader2 } from "lucide-react";
+import { Sparkles, Send, User, Loader2, Bot } from "lucide-react";
 import { getChatResponse } from "@/app/actions";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 type Message = {
   role: 'user' | 'model';
@@ -18,6 +20,7 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [model, setModel] = useState("mistral");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -40,9 +43,9 @@ export function ChatWidget() {
     setIsLoading(true);
     
     try {
-      // Pass the previous messages as history
+      // Pass the previous messages as history and the selected model
       const chatHistory = messages;
-      const response = await getChatResponse({ message: inputValue, history: chatHistory });
+      const response = await getChatResponse({ message: inputValue, history: chatHistory, model: model });
       const botMessage: Message = { role: 'model', content: [{ text: response.response }] };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
@@ -60,10 +63,26 @@ export function ChatWidget() {
   return (
     <div className="flex flex-col h-full bg-card overflow-hidden">
       <div className="p-4 border-b border-border">
-          <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Sparkles className="text-primary w-6 h-6" />
-              Chat with Sage
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold flex items-center gap-2">
+                <Sparkles className="text-primary w-6 h-6" />
+                Chat with Sage
+            </h2>
+            <div className="flex items-center gap-2">
+                <Bot className="w-4 h-4 text-muted-foreground" />
+                <Select value={model} onValueChange={setModel}>
+                    <SelectTrigger className="w-[180px] h-8 text-xs">
+                        <SelectValue placeholder="Select a model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="mistral">Mistral-7B (Free)</SelectItem>
+                        <SelectItem value="llama">LLaMA-2-13B (Free)</SelectItem>
+                        <SelectItem value="yi">Yi-34B (Free, Large)</SelectItem>
+                        <SelectItem value="gpt">GPT-4o Mini</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+          </div>
       </div>
       <div className="flex-1 overflow-hidden" >
         <ScrollArea className="h-full p-4" ref={scrollAreaRef}>

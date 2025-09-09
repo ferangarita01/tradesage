@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { mistralModel } from '../genkit';
+import { mistralLLM } from '../models/sageLLMs';
 
 const CandleSchema = z.object({
   time: z.string(),
@@ -49,7 +49,7 @@ export async function analyzeChart(
 
 const prompt = ai.definePrompt({
   name: 'analyzeChartPrompt',
-  model: mistralModel,
+  model: mistralLLM,
   input: {schema: AnalyzeChartInputSchema},
   output: {schema: AnalyzeChartOutputSchema},
   prompt: `Analyze the following {{assetName}} price data for {{analysisType}} detection.

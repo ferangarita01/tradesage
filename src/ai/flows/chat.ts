@@ -11,7 +11,19 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { mistralModel } from '../genkit';
+import {
+  mistralLLM,
+  llamaLLM,
+  yiLLM,
+  gptLLM,
+} from '@/ai/models/sageLLMs';
+
+const modelsMap: Record<string, any> = {
+  mistral: mistralLLM,
+  llama: llamaLLM,
+  yi: yiLLM,
+  gpt: gptLLM,
+};
 
 const ChatInputSchema = z.object({
   message: z.string().describe("The user's message to the chat bot."),
@@ -27,6 +39,7 @@ const ChatInputSchema = z.object({
       })
     )
     .describe('The conversation history.'),
+  model: z.string().optional().default('mistral'),
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 
@@ -51,7 +64,9 @@ const getMarketDataTool = ai.defineTool(
       interval: z
         .string()
         .optional()
-        .describe('The interval for the candles, e.g., 1m, 5m, 1h, 1d. Defaults to 15m.'),
+        .describe(
+          'The interval for the candles, e.g., 1m, 5m, 1h, 1d. Defaults to 15m.'
+        ),
     }),
     outputSchema: z.object({
       candles: z
@@ -83,41 +98,31 @@ const getMarketDataTool = ai.defineTool(
   }
 );
 
-const prompt = ai.definePrompt({
-  name: 'chatPrompt',
-  model: mistralModel,
-  input: {schema: ChatInputSchema},
-  output: {schema: z.object({response: z.string()})},
-  tools: [getMarketDataTool],
-  prompt: `You are a helpful AI assistant for an application called CryptoSage, which provides cryptocurrency and stock analysis tools.
-Your name is Sage. Be friendly, concise, and helpful.
-
-The user is asking for help. Here is the conversation history:
-{{#each history}}
-  {{#if (eq role 'user')}}User: {{content.[0].text}}{{/if}}
-  {{#if (eq role 'model')}}Sage: {{content.[0].text}}{{/if}}
-{{/each}}
-
-User's new message: {{{message}}}
-
-To answer the user's question, you have access to one primary tool:
-- \`getMarketData\`: Use this tool to get real-time and historical price data for assets like BTCUSDT, ETHUSDT, etc. This is your primary source for any price-related or chart analysis questions.
-
-Think step-by-step. If the user asks about prices, trends, or to analyze a chart, you MUST use the \`getMarketData\` tool to fetch the data first. Once you have the data, you can analyze it to formulate your response.
-
-If you use a tool, do not mention it in the response, just provide the final answer to the user based on the tool's output.`,
-});
-
 const chatFlow = ai.defineFlow(
   {
     name: 'chatFlow',
     inputSchema: ChatInputSchema,
     outputSchema: ChatOutputSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async (input: ChatInput) => {
+    const {message, history, model = 'mistral'} = input;
+    const modelToUse = modelsMap[model] || mistralLLM;
+
+    const {output} = await ai.generate({
+      model: modelToUse,
+      prompt: message,
+      history: history,
+      tools: [getMarketDataTool],
+      output: {
+        schema: z.object({
+          response: z.string(),
+        }),
+      },
+    });
+
     return {
-      response: output?.response || 'I am sorry, I could not generate a response.',
+      response:
+        output?.response || 'I am sorry, I could not generate a response.',
     };
   }
 );

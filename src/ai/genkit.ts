@@ -2,9 +2,7 @@
 import {genkit} from 'genkit';
 import {openai} from '@genkit-ai/openai';
 import {googleAI} from '@genkit-ai/googleai';
-
-// Define the model to be used throughout the application
-export const mistralModel = 'mistralai/mistral-7b-instruct-v0.2';
+import {mistralLLM, llamaLLM, yiLLM, gptLLM} from './models/sageLLMs';
 
 export const ai = genkit({
   plugins: [
@@ -15,6 +13,7 @@ export const ai = genkit({
     }),
     googleAI(),
   ],
+  models: [mistralLLM, llamaLLM, yiLLM, gptLLM],
   // Log all errors and warnings to the console
   logLevel: 'debug',
 });

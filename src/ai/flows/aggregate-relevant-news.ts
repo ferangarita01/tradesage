@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { mistralModel } from '../genkit';
+import { mistralLLM } from '../models/sageLLMs';
 
 const AggregateRelevantNewsInputSchema = z.object({
   assets: z
@@ -42,7 +42,7 @@ export async function aggregateRelevantNews(
 
 const prompt = ai.definePrompt({
   name: 'aggregateRelevantNewsPrompt',
-  model: mistralModel,
+  model: mistralLLM,
   input: {schema: AggregateRelevantNewsInputSchema},
   output: {schema: AggregateRelevantNewsOutputSchema},
   prompt: `You are an AI assistant specialized in financial markets and news analysis.
