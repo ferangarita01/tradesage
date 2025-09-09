@@ -9,7 +9,6 @@
  * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
 
-import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { chatComplete } from '@/ai/providers/chat';
 
@@ -67,14 +66,3 @@ Respond ONLY in valid JSON format with two keys: "analysisResult" (a string with
     return { analysisResult: "AI analysis failed or no clear pattern was detected.", confidenceLevel: 0.0 };
   }
 }
-
-export const analyzeChartFlow = ai.defineFlow(
-  {
-    name: 'analyzeChartFlow',
-    inputSchema: AnalyzeChartInputSchema,
-    outputSchema: AnalyzeChartOutputSchema,
-  },
-  async (input) => {
-    return await analyzeChart(input);
-  }
-);

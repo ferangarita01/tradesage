@@ -11,8 +11,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { analyzeChartFlow } from './analyze-chart-patterns';
-import { aggregateRelevantNewsFlow } from './aggregate-relevant-news';
+import { analyzeChart } from './analyze-chart-patterns';
+import { aggregateRelevantNews } from './aggregate-relevant-news';
 
 const ChatInputSchema = z.object({
   message: z.string().describe('The user\'s message to the chat bot.'),
@@ -69,7 +69,7 @@ const prompt = ai.definePrompt({
   name: 'chatPrompt',
   input: {schema: ChatInputSchema},
   output: {schema: ChatOutputSchema},
-  tools: [analyzeChartFlow, aggregateRelevantNewsFlow, getMarketDataTool],
+  tools: [getMarketDataTool],
   prompt: `You are a helpful AI assistant for an application called CryptoSage, which provides cryptocurrency and stock analysis tools.
 Your name is Sage. Be friendly, concise, and helpful.
 
@@ -81,13 +81,12 @@ The user is asking for help. Here is the conversation history:
 
 User's new message: {{{message}}}
 
-To answer the user's question, you have access to several tools:
+To answer the user's question, you have access to one primary tool:
 - \`getMarketData\`: Use this tool to get real-time and historical price data for assets like BTCUSDT, ETHUSDT, etc. This is your primary source for any price-related or chart analysis questions.
-- \`analyzeChart\`: Use this tool for technical analysis AFTER you have fetched the data with \`getMarketData\`.
-- \`aggregateRelevantNews\`: Use this for news-related queries.
 
-Think step-by-step. If the user asks about prices or to analyze a chart, first use \`getMarketData\` to fetch the data, and only then use other tools or formulate your response.
-If you use a tool, do not mention it in the response, just provide the final answer to the user.`,
+Think step-by-step. If the user asks about prices, trends, or to analyze a chart, you MUST use the \`getMarketData\` tool to fetch the data first. Once you have the data, you can analyze it to formulate your response.
+
+If you use a tool, do not mention it in the response, just provide the final answer to the user based on the tool's output.`,
 });
 
 const chatFlow = ai.defineFlow(
