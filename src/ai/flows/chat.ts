@@ -46,7 +46,7 @@ const chatFlow = ai.defineFlow(
     const finalPrompt = `${historyPrompt}\nuser: ${message}`;
 
     const result = await ai.generate({
-      model: modelToUse,   // ✅ usa el string directamente
+      model: modelToUse,
       prompt: finalPrompt,
     });
 
