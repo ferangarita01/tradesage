@@ -5,3 +5,18 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+
+# apphosting.yaml
+# Configuración de Firebase App Hosting para tu app Next.js
+
+runConfig:
+  runtime: nodejs20
+
+  # Variables de entorno
+  env:
+    - variable: OPENAI_API_KEY
+      secret: OPENAI_API_KEY   # ⚡ Referencia directa al secreto de GCP
+
+# Opcional si deseas fijar región
+# region: us-central1
