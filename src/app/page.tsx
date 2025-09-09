@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 
 export default function Home() {
   const [isChatOpen, setIsChatOpen] = useState(true);
+  const [selectedSymbol, setSelectedSymbol] = useState("BTCUSDT");
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -21,7 +22,10 @@ export default function Home() {
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 transition-all duration-300">
           <div className="grid gap-6 md:gap-8">
             <div className="col-span-1">
-              <ChartCard />
+              <ChartCard
+                symbol={selectedSymbol}
+                onSymbolChange={setSelectedSymbol}
+              />
             </div>
             <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
                 <NewsCard />
