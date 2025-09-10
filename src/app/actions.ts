@@ -1,10 +1,10 @@
 
 "use server";
 
-import { analyzeChart, type AnalyzeChartInput } from "@/ai/flows/analyze-chart-patterns";
-import { chat, type ChatInput } from "@/ai/flows/chat";
+import { analyzeChart, type AnalyzeChartInput, type AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
+import { chat, type ChatInput, type ChatOutput } from "@/ai/flows/chat";
 
-export async function getChartAnalysis(input: AnalyzeChartInput) {
+export async function getChartAnalysis(input: AnalyzeChartInput): Promise<AnalyzeChartOutput> {
   "use server";
   try {
     const analysis = await analyzeChart(input);
@@ -16,13 +16,13 @@ export async function getChartAnalysis(input: AnalyzeChartInput) {
   }
 }
 
-export async function getChatResponse(input: ChatInput) {
+export async function getChatResponse(input: ChatInput): Promise<ChatOutput> {
     "use server";
     try {
         const response = await chat(input);
         return response;
     } catch (error) {
-        console.error(error);
+        console.error("Error in getChatResponse:", error);
         return { response: "Sorry, I'm having trouble connecting to the AI. Please try again later." };
     }
 }

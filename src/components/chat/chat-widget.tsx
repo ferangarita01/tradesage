@@ -91,10 +91,11 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
                         <SelectValue placeholder="Select a model" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="mistral">Mistral Small (Free)</SelectItem>
-                        <SelectItem value="llama">LLaMA-3-8B (Free)</SelectItem>
-                        <SelectItem value="yi">Yi-34B (Free, Large)</SelectItem>
-                        <SelectItem value="gpt">GPT-4o Mini (OpenAI)</SelectItem>
+                        <SelectItem value="mistral">Mistral Small</SelectItem>
+                        <SelectItem value="llama">LLaMA-3-8B</SelectItem>
+                        <SelectItem value="yi">Yi-34B</SelectItem>
+                        <SelectItem value="gpt">GPT-4o Mini (OR)</SelectItem>
+                        <SelectItem value="gpt4oMini">GPT-4o Mini (OAI)</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

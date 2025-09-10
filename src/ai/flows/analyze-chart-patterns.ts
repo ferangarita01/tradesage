@@ -60,7 +60,7 @@ const analyzeChartFlow = ai.defineFlow(
   },
   async (input) => {
     try {
-        const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral });
+        const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral as any });
         return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
@@ -72,17 +72,6 @@ const analyzeChartFlow = ai.defineFlow(
   }
 );
 
-
-export const analyzeChart = ai.defineTool(
-  {
-    name: 'analyzeChart',
-    description:
-      'Analyzes historical price data (candles) for a given asset to identify technical patterns or trends. Use this when the user asks for analysis, diagnosis, or to identify patterns on the chart.',
-    inputSchema: AnalyzeChartInputSchema,
-    outputSchema: AnalyzeChartOutputSchema,
-  },
-  async (input) => {
-    console.log('Analyzing chart with tool using input:', input);
+export async function analyzeChart(input: AnalyzeChartInput): Promise<AnalyzeChartOutput> {
     return await analyzeChartFlow(input);
-  }
-);
+}
