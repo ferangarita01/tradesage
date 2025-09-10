@@ -5,6 +5,6 @@ runConfig:
   maxInstances: 1
   env:
     - variable: OPENAI_API_KEY
-      secret: OPENAI_API_KEY
+      secret: OPENAI_API_KEY:2
     - variable: OPENROUTER_API_KEY
       secret: OPENROUTER_API_KEY
