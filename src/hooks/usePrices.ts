@@ -101,35 +101,41 @@ export function usePrices(
     setError(null);
 
     try {
+      // Fix: Use the correct Binance API endpoint for price data
       const res = await fetch(
-        `/api/prices?symbol=${symbol}&interval=${interval}&limit=${limit}`,
-        { 
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        }
+        `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
       );
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `HTTP ${res.status}: ${res.statusText}`);
+        // Use res.status when calling parseError for HTTP errors
+        const parsedError = parseError(new Error(errorData.msg || `HTTP error ${res.status}`), res.status);
+        throw parsedError;
       }
 
-      const data = await res.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      setCandles(data.candles || []);
+      const data: any[][] = await res.json();
+      
+      const formattedCandles: Candle[] = data.map(d => ({
+        time: d[0],
+        open: parseFloat(d[1]),
+        high: parseFloat(d[2]),
+        low: parseFloat(d[3]),
+        close: parseFloat(d[4]),
+        volume: parseFloat(d[5])
+      }));
+      
+      setCandles(formattedCandles);
       setLastUpdate(new Date());
       setRetryCount(0); // Reset retry count on success
       
     } catch (err: any) {
-      const parsedError = parseError(err);
+      // If the error is already a PricesError, use it, otherwise parse it
+      const parsedError = err.type ? err : parseError(err);
       setError(parsedError);
       setCandles([]); // Clear stale data on error
-      setRetryCount(prev => prev + 1);
+      if (parsedError.retryable) {
+        setRetryCount(prev => prev + 1);
+      }
     } finally {
       setLoading(false);
     }
@@ -137,9 +143,13 @@ export function usePrices(
 
   useEffect(() => {
     load();
-    const intervalId = setInterval(load, 30000); // Refresh every 30 seconds
-    return () => clearInterval(intervalId);
-  }, [load]);
+    // Refresh every 30 seconds only if there's no error or if the error is retryable
+    const canRefresh = !error || error.retryable;
+    if (canRefresh) {
+        const intervalId = setInterval(load, 30000); 
+        return () => clearInterval(intervalId);
+    }
+  }, [load, error]);
 
   const manualRetry = useCallback(() => {
     setRetryCount(0);
