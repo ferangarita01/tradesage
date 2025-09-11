@@ -2,12 +2,13 @@
 "use client";
 
 import * as React from "react";
-import * as LightweightCharts from 'lightweight-charts';
+import { createChart, type IChartApi, type ISeriesApi, type UTCTimestamp, LineStyle } from 'lightweight-charts';
 import { AlertCircle, WifiOff, Clock, RefreshCw, BrainCircuit } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
 import { usePatternDetection } from "@/hooks/usePatternDetection";
 import type { Pattern } from "@/types/ai-types";
+
 
 interface TradingViewChartProps {
   symbol?: string;
@@ -30,8 +31,8 @@ export function TradingViewChart({
   retryCount,
 }: TradingViewChartProps) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<LightweightCharts.IChartApi | null>(null);
-  const candlestickSeriesRef = React.useRef<LightweightCharts.ISeriesApi<'Candlestick'> | null>(null);
+  const chartRef = React.useRef<{ chart: IChartApi | null }>({ chart: null });
+  const candlestickSeriesRef = React.useRef<ISeriesApi<'Candlestick'> | null>(null);
   const { patterns, loading: patternsLoading, detectPatterns } = usePatternDetection();
 
   const handleDetectPatterns = () => {
@@ -62,11 +63,14 @@ export function TradingViewChart({
             timeVisible: true,
             secondsVisible: false,
         },
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight,
     };
 
-    if (!chartRef.current) {
-        chartRef.current = LightweightCharts.createChart(chartContainerRef.current, chartOptions);
-        candlestickSeriesRef.current = chartRef.current.addCandlestickSeries({
+    if (!chartRef.current.chart) {
+        const chart = createChart(chartContainerRef.current, chartOptions);
+        chartRef.current.chart = chart;
+        candlestickSeriesRef.current = chart.addCandlestickSeries({
             upColor: '#26a69a',
             downColor: '#ef5350',
             borderDownColor: '#ef5350',
@@ -75,11 +79,11 @@ export function TradingViewChart({
             wickUpColor: '#26a69a',
         });
     } else {
-        chartRef.current.applyOptions(chartOptions);
+        chartRef.current.chart.applyOptions(chartOptions);
     }
     
     const chartData = candles.map(c => ({
-      time: (c.time / 1000) as LightweightCharts.UTCTimestamp,
+      time: (c.time / 1000) as UTCTimestamp,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -87,16 +91,13 @@ export function TradingViewChart({
     }));
 
     candlestickSeriesRef.current?.setData(chartData);
-    chartRef.current.timeScale().fitContent();
+    chartRef.current.chart.timeScale().fitContent();
 
-    // Remove previous price lines to avoid duplicates
     if (candlestickSeriesRef.current) {
         const lines = candlestickSeriesRef.current.priceLines();
         lines.forEach(line => candlestickSeriesRef.current?.removePriceLine(line));
     }
 
-
-    // Dibujar patrones
     patterns.forEach((pattern) => {
         if ((pattern.type === 'support' || pattern.type === 'resistance') && pattern.points.length > 0) {
             const price = pattern.points[0].price;
@@ -104,7 +105,7 @@ export function TradingViewChart({
                 price: price,
                 color: 'hsl(var(--accent))',
                 lineWidth: 2,
-                lineStyle: LightweightCharts.LineStyle.Dashed,
+                lineStyle: LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: pattern.name,
             });
@@ -112,19 +113,31 @@ export function TradingViewChart({
     });
 
     const handleResize = () => {
-      if(chartContainerRef.current && chartRef.current) {
-        chartRef.current.resize(chartContainerRef.current.clientWidth, chartContainerRef.current.clientHeight);
+      if (chartContainerRef.current && chartRef.current.chart) {
+        const container = chartContainerRef.current;
+        const rect = container.getBoundingClientRect();
+        
+        chartRef.current.chart.resize(
+          Math.max(rect.width, 300),
+          Math.max(rect.height, 200)
+        );
       }
     };
 
+    setTimeout(handleResize, 0);
+
     window.addEventListener('resize', handleResize);
+    const resizeObserver = new ResizeObserver(handleResize);
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      resizeObserver.disconnect();
     };
 
   }, [candles, patterns, theme, symbol]);
-
 
   const getErrorIcon = (errorType: string) => {
     switch (errorType) {
@@ -144,7 +157,6 @@ export function TradingViewChart({
       default: return 'text-red-500';
     }
   };
-
 
   if (loading && !candles.length) {
     return (
