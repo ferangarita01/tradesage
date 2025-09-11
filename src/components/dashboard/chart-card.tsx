@@ -47,13 +47,10 @@ export function ChartCard({
   refetch,
   retryCount,
 }: ChartCardProps) {
-  const handleExport = () => {
-    window.open(`/api/prices?symbol=${symbol}&interval=${interval}&format=csv`);
-  };
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="flex flex-row items-center justify-between">
+    <Card className="flex flex-col h-full border-0 shadow-none">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <Select value={symbol} onValueChange={onSymbolChange}>
           <SelectTrigger className="w-[280px]">
             <SelectValue placeholder="Select an asset" />
@@ -64,12 +61,8 @@ export function ChartCard({
             ))}
           </SelectContent>
         </Select>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Exportar CSV
-        </Button>
       </CardHeader>
-      <CardContent className="flex-grow p-4">
+      <CardContent className="flex-grow p-0">
         <TradingViewChart 
             symbol={symbol} 
             interval={interval} 

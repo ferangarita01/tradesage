@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { createChart, IChartApi, ISeriesApi, LineStyle, UTCTimestamp } from 'lightweight-charts';
+import * as LightweightCharts from 'lightweight-charts';
 import { AlertCircle, WifiOff, Clock, RefreshCw, BrainCircuit } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
@@ -30,8 +30,8 @@ export function TradingViewChart({
   retryCount,
 }: TradingViewChartProps) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<IChartApi | null>(null);
-  const candlestickSeriesRef = React.useRef<ISeriesApi<'Candlestick'> | null>(null);
+  const chartRef = React.useRef<LightweightCharts.IChartApi | null>(null);
+  const candlestickSeriesRef = React.useRef<LightweightCharts.ISeriesApi<'Candlestick'> | null>(null);
   const { patterns, loading: patternsLoading, detectPatterns } = usePatternDetection();
 
   const handleDetectPatterns = () => {
@@ -51,7 +51,7 @@ export function TradingViewChart({
 
     const chartOptions = {
         layout: {
-            background: { color: theme === 'dark' ? '#1E1E1E' : '#FFFFFF' },
+            background: { color: theme === 'dark' ? '#151924' : '#FFFFFF' },
             textColor: theme === 'dark' ? '#D1D4DC' : '#191919',
         },
         grid: {
@@ -65,7 +65,7 @@ export function TradingViewChart({
     };
 
     if (!chartRef.current) {
-        chartRef.current = createChart(chartContainerRef.current, chartOptions);
+        chartRef.current = LightweightCharts.createChart(chartContainerRef.current, chartOptions);
         candlestickSeriesRef.current = chartRef.current.addCandlestickSeries({
             upColor: '#26a69a',
             downColor: '#ef5350',
@@ -79,7 +79,7 @@ export function TradingViewChart({
     }
     
     const chartData = candles.map(c => ({
-      time: (c.time / 1000) as UTCTimestamp,
+      time: (c.time / 1000) as LightweightCharts.UTCTimestamp,
       open: c.open,
       high: c.high,
       low: c.low,
@@ -89,15 +89,22 @@ export function TradingViewChart({
     candlestickSeriesRef.current?.setData(chartData);
     chartRef.current.timeScale().fitContent();
 
+    // Remove previous price lines to avoid duplicates
+    if (candlestickSeriesRef.current) {
+        const lines = candlestickSeriesRef.current.priceLines();
+        lines.forEach(line => candlestickSeriesRef.current?.removePriceLine(line));
+    }
+
+
     // Dibujar patrones
-    patterns.forEach((pattern, index) => {
+    patterns.forEach((pattern) => {
         if ((pattern.type === 'support' || pattern.type === 'resistance') && pattern.points.length > 0) {
             const price = pattern.points[0].price;
             candlestickSeriesRef.current?.createPriceLine({
                 price: price,
                 color: 'hsl(var(--accent))',
                 lineWidth: 2,
-                lineStyle: LineStyle.Dashed,
+                lineStyle: LightweightCharts.LineStyle.Dashed,
                 axisLabelVisible: true,
                 title: pattern.name,
             });
@@ -105,8 +112,8 @@ export function TradingViewChart({
     });
 
     const handleResize = () => {
-      if(chartContainerRef.current) {
-        chartRef.current?.resize(chartContainerRef.current.clientWidth, chartContainerRef.current.clientHeight);
+      if(chartContainerRef.current && chartRef.current) {
+        chartRef.current.resize(chartContainerRef.current.clientWidth, chartContainerRef.current.clientHeight);
       }
     };
 
@@ -116,7 +123,7 @@ export function TradingViewChart({
       window.removeEventListener('resize', handleResize);
     };
 
-  }, [candles, patterns, theme]);
+  }, [candles, patterns, theme, symbol]);
 
 
   const getErrorIcon = (errorType: string) => {
@@ -141,7 +148,7 @@ export function TradingViewChart({
 
   if (loading && !candles.length) {
     return (
-      <div className="w-full h-[400px] flex items-center justify-center bg-background border rounded-lg">
+      <div className="w-full h-[400px] flex items-center justify-center bg-card border rounded-lg">
         <div className="flex items-center gap-2 text-muted-foreground">
           <RefreshCw className="w-4 h-4 animate-spin" />
           Loading {symbol.replace('USDT', '/USDT')} chart...
@@ -152,7 +159,7 @@ export function TradingViewChart({
 
   if (error && !candles.length) {
     return (
-      <div className="w-full h-[400px] flex flex-col items-center justify-center bg-background border rounded-lg p-6">
+      <div className="w-full h-[400px] flex flex-col items-center justify-center bg-card border rounded-lg p-6">
         <div className={`flex items-center gap-2 mb-4 ${getErrorColor(error.type)}`}>
           {getErrorIcon(error.type)}
           <span className="font-medium">Chart Error</span>
@@ -185,8 +192,8 @@ export function TradingViewChart({
   }
 
   return (
-    <div className="w-full h-[400px] relative">
-       <div className="absolute top-0 right-0 z-10 p-2">
+    <div className="w-full h-[60vh] relative">
+       <div className="absolute top-2 right-2 z-10 p-2">
          <Button
             onClick={handleDetectPatterns}
             variant="outline"
@@ -194,12 +201,10 @@ export function TradingViewChart({
             disabled={patternsLoading}
           >
             <BrainCircuit className={`mr-2 h-4 w-4 ${patternsLoading ? 'animate-spin' : ''}`} />
-            {patternsLoading ? 'Analizando...' : 'Analizar Patrones'}
+            {patternsLoading ? 'Analyzing...' : 'Detect Patterns'}
           </Button>
        </div>
-       <div ref={chartContainerRef} className="w-full h-full" />
+       <div ref={chartContainerRef} className="w-full h-full rounded-lg" />
     </div>
   );
 }
-
-    
