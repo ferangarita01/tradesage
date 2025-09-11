@@ -22,6 +22,15 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "src/**/*"],
-  "exclude": ["node_modules", "public"]
+  "include": [
+    "next-env.d.ts",
+    "src/**/*",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "public",              // 🔥 excluye la Charting Library
+    "**/public/**",        // 🔥 excluye cualquier subcarpeta de public/
+    "**/charting_library"  // 🔥 extra por seguridad (en caso de imports accidentales)
+  ]
 }
