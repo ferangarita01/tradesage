@@ -1,3 +1,4 @@
+
 import { z } from "zod";
 
 // --- Candle Schema (OHLC completo) ---
@@ -50,7 +51,7 @@ const PointSchema = z.object({
   price: z.number().describe("The price at that point."),
 });
 
-const PatternSchema = z.object({
+export const PatternSchema = z.object({
   name: z
     .string()
     .describe("The name of the detected pattern (e.g., Head and Shoulders)."),
@@ -62,6 +63,8 @@ const PatternSchema = z.object({
     .min(2)
     .describe("Points defining the pattern, must exist in candles."),
 });
+export type Pattern = z.infer<typeof PatternSchema>;
+
 
 export const DetectChartPatternsOutputSchema = z.object({
   patterns: z

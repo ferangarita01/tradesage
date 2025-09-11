@@ -2,10 +2,12 @@
 "use client";
 
 import * as React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { AlertCircle, WifiOff, Clock, RefreshCw } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { AlertCircle, WifiOff, Clock, RefreshCw, BrainCircuit } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
+import { usePatternDetection } from "@/hooks/usePatternDetection";
+import type { Pattern } from "@/types/ai-types";
 
 interface TradingViewChartProps {
   symbol?: string;
@@ -27,10 +29,24 @@ export function TradingViewChart({
   refetch,
   retryCount,
 }: TradingViewChartProps) {
+  const { patterns, loading: patternsLoading, detectPatterns } = usePatternDetection();
 
+  const handleDetectPatterns = () => {
+    const chartCandles = candles.map(c => ({
+      time: String(c.time),
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+      volume: c.volume
+    }));
+    detectPatterns({ candles: chartCandles, assetName: symbol });
+  };
+  
   const chartData = candles.map(c => ({
     time: new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     price: c.close,
+    fullTime: c.time, // Keep original timestamp for pattern matching
   }));
 
   const getErrorIcon = (errorType: string) => {
@@ -50,6 +66,40 @@ export function TradingViewChart({
       case 'server': return 'text-purple-500';
       default: return 'text-red-500';
     }
+  };
+
+  // Helper to find the index in chartData corresponding to a pattern timestamp
+  const findDataIndex = (timestamp: string) => {
+    return chartData.findIndex(d => d.fullTime === parseInt(timestamp, 10));
+  };
+  
+  const renderPatternLines = () => {
+    return patterns.map((pattern, index) => {
+      if (pattern.type === 'support' || pattern.type === 'resistance') {
+        // Render horizontal line for support/resistance
+        const y = pattern.points[0].price;
+        return <ReferenceLine key={`pattern-${index}`} y={y} label={pattern.name} stroke="hsl(var(--accent))" strokeDasharray="3 3" />;
+      } else if (pattern.type === 'trendline' && pattern.points.length >= 2) {
+        // Render a trendline between the two points
+        const startIndex = findDataIndex(pattern.points[0].time);
+        const endIndex = findDataIndex(pattern.points[1].time);
+        
+        if (startIndex === -1 || endIndex === -1) return null;
+
+        const startPoint = { x: startIndex, y: pattern.points[0].price };
+        const endPoint = { x: endIndex, y: pattern.points[1].price };
+        
+        return (
+          <ReferenceLine
+            key={`pattern-${index}`}
+            segment={[{ x: startPoint.x, y: startPoint.y }, { x: endPoint.x, y: endPoint.y }]}
+            stroke="hsl(var(--accent))"
+            strokeWidth={2}
+          />
+        );
+      }
+      return null;
+    });
   };
 
   if (loading && !candles.length) {
@@ -98,7 +148,18 @@ export function TradingViewChart({
   }
 
   return (
-    <div className="w-full h-[400px]">
+    <div className="w-full h-[400px] relative">
+       <div className="absolute top-0 right-0 z-10 p-2">
+         <Button
+            onClick={handleDetectPatterns}
+            variant="outline"
+            size="sm"
+            disabled={patternsLoading}
+          >
+            <BrainCircuit className={`mr-2 h-4 w-4 ${patternsLoading ? 'animate-spin' : ''}`} />
+            {patternsLoading ? 'Analizando...' : 'Analizar Patrones'}
+          </Button>
+       </div>
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={chartData}
@@ -121,6 +182,7 @@ export function TradingViewChart({
           />
           <Legend />
           <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+          {renderPatternLines()}
         </LineChart>
       </ResponsiveContainer>
     </div>

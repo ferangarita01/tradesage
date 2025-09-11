@@ -1,42 +1,28 @@
+
 // src/hooks/usePatternDetection.ts
 import { useState, useCallback } from 'react';
+import type { DetectChartPatternsInput, DetectChartPatternsOutput, Pattern } from '@/types/ai-types';
 
-interface CandleData {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  timestamp?: string;
-}
-
-interface PatternResult {
-  pattern: string;
-  range: [number, number];
-  confidence: number;
-  description: string;
-  type: 'bullish' | 'bearish' | 'neutral';
-}
-
-interface PatternDetectionResponse {
+interface PatternDetectionResponse extends DetectChartPatternsOutput {
   success: boolean;
-  patterns: PatternResult[];
-  totalCandles: number;
-  timestamp: string;
+  assetName: string;
+  candleCount: number;
 }
 
 export const usePatternDetection = () => {
-  const [patterns, setPatterns] = useState<PatternResult[]>([]);
+  const [patterns, setPatterns] = useState<Pattern[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const detectPatterns = useCallback(async (candles: CandleData[]) => {
-    if (!candles || candles.length === 0) {
+  const detectPatterns = useCallback(async (input: DetectChartPatternsInput) => {
+    if (!input.candles || input.candles.length === 0) {
       setError('No hay datos de velas para analizar');
       return;
     }
 
     setLoading(true);
     setError(null);
+    setPatterns([]); // Clear previous patterns
 
     try {
       const response = await fetch('/api/patterns', {
@@ -44,20 +30,21 @@ export const usePatternDetection = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ candles }),
+        body: JSON.stringify(input),
       });
 
       if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error ${response.status}: ${response.statusText}`);
       }
 
       const data: PatternDetectionResponse = await response.json();
       
       if (data.success) {
         setPatterns(data.patterns);
-        console.log(`✅ Detectados ${data.patterns.length} patrones en ${data.totalCandles} velas`);
+        console.log(`✅ Detectados ${data.patterns.length} patrones en ${data.candleCount} velas para ${data.assetName}`);
       } else {
-        throw new Error('Error en la respuesta del servidor');
+        throw new Error('La respuesta de la API no fue exitosa');
       }
 
     } catch (err) {
