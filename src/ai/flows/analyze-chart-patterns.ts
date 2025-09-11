@@ -5,52 +5,28 @@
  * @fileOverview An AI agent that analyzes cryptocurrency charts to identify patterns and trends.
  *
  * - analyzeChart - A Genkit tool that handles the chart analysis process.
- * - AnalyzeChartInput - The input type for the analyzeChart function.
- * - AnalyzeChartOutput - The return type for the analyzeChart function.
  */
-import { z } from 'zod';
-import { ai } from '../genkit';
-import { modelsMap } from '../models/sageLLMs';
-
-const CandleSchema = z.object({
-  time: z.string(),
-  price: z.number(),
-});
-
-const AnalyzeChartInputSchema = z.object({
-  candles: z
-    .array(CandleSchema)
-    .describe('The historical price data for the asset.'),
-  assetName: z.string().describe('The name of the cryptocurrency asset.'),
-});
-export type AnalyzeChartInput = z.infer<typeof AnalyzeChartInputSchema>;
-
-const AnalyzeChartOutputSchema = z.object({
-  analysisResult: z.string().describe('The result of the chart analysis.'),
-  confidenceLevel: z
-    .number()
-    .min(0)
-    .max(1)
-    .describe(
-      'A number between 0 and 1 indicating the confidence level of the analysis result.'
-    ),
-});
-export type AnalyzeChartOutput = z.infer<typeof AnalyzeChartOutputSchema>;
-
+import {
+  AnalyzeChartInput,
+  AnalyzeChartInputSchema,
+  AnalyzeChartOutput,
+  AnalyzeChartOutputSchema,
+} from '@/types/ai-types';
+import {ai} from '../genkit';
+import {modelsMap} from '../models/sageLLMs';
 
 const analyzeChartPrompt = ai.definePrompt({
-    name: 'analyzeChartPrompt',
-    input: {schema: AnalyzeChartInputSchema},
-    output: {schema: AnalyzeChartOutputSchema},
-    prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
+  name: 'analyzeChartPrompt',
+  input: {schema: AnalyzeChartInputSchema},
+  output: {schema: AnalyzeChartOutputSchema},
+  prompt: `Analyze the following {{assetName}} price data for trend and pattern detection.
   Focus on technical analysis patterns like head and shoulders, triangles, channels, and overall trends.
 
   Candles (last 50 periods):
   {{{json candles}}}
 
   Provide a concise summary of your findings.`,
-  });
-
+});
 
 const analyzeChartFlow = ai.defineFlow(
   {
@@ -58,10 +34,12 @@ const analyzeChartFlow = ai.defineFlow(
     inputSchema: AnalyzeChartInputSchema,
     outputSchema: AnalyzeChartOutputSchema,
   },
-  async (input) => {
+  async input => {
     try {
-        const {output} = await analyzeChartPrompt(input, { model: modelsMap.mistral as any });
-        return output!;
+      const {output} = await analyzeChartPrompt(input, {
+        model: modelsMap.mistral as any,
+      });
+      return output!;
     } catch (e) {
       console.error('Chart analysis failed:', e);
       return {
@@ -72,6 +50,8 @@ const analyzeChartFlow = ai.defineFlow(
   }
 );
 
-export async function analyzeChart(input: AnalyzeChartInput): Promise<AnalyzeChartOutput> {
-    return await analyzeChartFlow(input);
+export async function analyzeChart(
+  input: AnalyzeChartInput
+): Promise<AnalyzeChartOutput> {
+  return await analyzeChartFlow(input);
 }

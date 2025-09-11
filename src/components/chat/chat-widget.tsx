@@ -9,7 +9,7 @@ import { Sparkles, Send, User, Loader2, Bot } from "lucide-react";
 import { getChatResponse } from "@/app/actions";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { ChatInput } from "@/ai/flows/chat";
+import type { ChatInput } from "@/types/ai-types";
 
 type Message = {
   role: 'user' | 'assistant';
