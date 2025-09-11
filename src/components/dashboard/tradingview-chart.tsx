@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -6,7 +5,6 @@ import {
   createChart,
   UTCTimestamp,
   LineStyle,
-  PriceLineOptions,
 } from "lightweight-charts";
 import {
   AlertCircle,
@@ -19,6 +17,10 @@ import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
 import { usePatternDetection } from "@/hooks/usePatternDetection";
 
+// ✅ Tipos inferidos automáticos (ya no usamos IChartApi)
+type ChartType = ReturnType<typeof createChart>;
+type CandleSeriesType = ReturnType<ChartType["addCandlestickSeries"]>;
+
 interface TradingViewChartProps {
   symbol?: string;
   interval?: string;
@@ -28,6 +30,7 @@ interface TradingViewChartProps {
   error?: PricesError | null;
   refetch?: () => void;
   retryCount?: number;
+  onChartReady?: (chart: ChartType, series: CandleSeriesType) => void;
 }
 
 export function TradingViewChart({
@@ -38,10 +41,11 @@ export function TradingViewChart({
   error,
   refetch,
   retryCount,
+  onChartReady,
 }: TradingViewChartProps) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<ReturnType<typeof createChart> | null>(null);
-  const seriesRef = React.useRef<any>(null); // Usamos 'any' para evitar problemas de tipo con la serie
+  const chartRef = React.useRef<ChartType | null>(null);
+  const seriesRef = React.useRef<CandleSeriesType | null>(null);
 
   const { patterns, loading: patternsLoading, detectPatterns } =
     usePatternDetection();
@@ -50,9 +54,9 @@ export function TradingViewChart({
     detectPatterns({ candles, assetName: symbol });
   };
 
-  // Inicialización única
+  // Crear chart al montar
   React.useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || chartRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -68,6 +72,7 @@ export function TradingViewChart({
       timeScale: { timeVisible: true },
     });
 
+    chartRef.current = chart;
     const series = chart.addCandlestickSeries({
       upColor: "#26a69a",
       downColor: "#ef5350",
@@ -76,29 +81,28 @@ export function TradingViewChart({
       wickDownColor: "#ef5350",
       wickUpColor: "#26a69a",
     });
-
-    chartRef.current = chart;
     seriesRef.current = series;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      if (entries[0] && chartRef.current) {
-        const { width, height } = entries[0].contentRect;
-        chartRef.current.resize(width, height);
+    if (onChartReady && seriesRef.current) {
+      onChartReady(chart, seriesRef.current);
+    }
+
+    const resizeObserver = new ResizeObserver(({ 0: entry }) => {
+      if (entry) {
+        chart.resize(entry.contentRect.width, entry.contentRect.height);
       }
     });
     resizeObserver.observe(chartContainerRef.current);
 
     return () => {
       resizeObserver.disconnect();
-      if (chartRef.current) {
-        chartRef.current.remove();
-      }
+      chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [theme]);
+  }, [theme, onChartReady]);
 
-  // Actualización de velas
+  // Actualizar data
   React.useEffect(() => {
     if (seriesRef.current && candles?.length) {
       const chartData = candles.map((c) => ({
@@ -113,7 +117,7 @@ export function TradingViewChart({
     }
   }, [candles]);
 
-  // Dibujo de patrones
+  // Dibujar patrones
   React.useEffect(() => {
     if (!seriesRef.current) return;
     const series = seriesRef.current;

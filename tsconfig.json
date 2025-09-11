@@ -13,10 +13,6 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-
-    /* ✅ AQUÍ EL FIX */
-    "types": ["node", "react", "react-dom"],
-
     "plugins": [
       {
         "name": "next"
@@ -26,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": ["next-env.d.ts", "src/**/*"],
+  "exclude": ["node_modules", "public"]
 }
