@@ -1,4 +1,3 @@
-
 "use client";
 
 import * as React from "react";
@@ -7,8 +6,6 @@ import { AlertCircle, WifiOff, Clock, RefreshCw, BrainCircuit } from 'lucide-rea
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
 import { usePatternDetection } from "@/hooks/usePatternDetection";
-import type { Pattern } from "@/types/ai-types";
-
 
 interface TradingViewChartProps {
   symbol?: string;
@@ -31,7 +28,7 @@ export function TradingViewChart({
   retryCount,
 }: TradingViewChartProps) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<{ chart: IChartApi | null }>({ chart: null });
+  const chartRef = React.useRef<IChartApi | null>(null);
   const candlestickSeriesRef = React.useRef<ISeriesApi<'Candlestick'> | null>(null);
   const { patterns, loading: patternsLoading, detectPatterns } = usePatternDetection();
 
@@ -48,78 +45,67 @@ export function TradingViewChart({
   };
   
   React.useEffect(() => {
-    if (!chartContainerRef.current) return;
+    if (!chartContainerRef.current || chartRef.current) return;
 
-    const chartOptions = {
+    const chart = createChart(chartContainerRef.current, {
+        width: chartContainerRef.current.clientWidth,
+        height: chartContainerRef.current.clientHeight || 500, // Fallback height
         layout: {
             background: { color: theme === 'dark' ? '#151924' : '#FFFFFF' },
             textColor: theme === 'dark' ? '#D1D4DC' : '#191919',
         },
         grid: {
-            vertLines: { color: theme === 'dark' ? '#2A2A2A' : '#E1E1E1' },
+            vertLines: { color: 'transparent' },
             horzLines: { color: theme === 'dark' ? '#2A2A2A' : '#E1E1E1' },
         },
         timeScale: {
             timeVisible: true,
             secondsVisible: false,
         },
-        width: chartContainerRef.current.clientWidth,
-        height: chartContainerRef.current.clientHeight,
-    };
-
-    // Create chart instance only once
-    if (!chartRef.current.chart) {
-        chartRef.current.chart = createChart(chartContainerRef.current, chartOptions);
-        candlestickSeriesRef.current = chartRef.current.chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderDownColor: '#ef5350',
-            borderUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-            wickUpColor: '#26a69a',
-        });
-    } else {
-        chartRef.current.chart.applyOptions(chartOptions);
-    }
+    });
+    chartRef.current = chart;
     
-    // Resize observer
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current.chart) {
-        chartRef.current.chart.resize(
-          chartContainerRef.current.clientWidth,
-          chartContainerRef.current.clientHeight
-        );
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(handleResize);
+    candlestickSeriesRef.current = chart.addCandlestickSeries({
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderDownColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+    });
+    
+    const resizeObserver = new ResizeObserver(entries => {
+        if (entries[0] && entries[0].contentRect) {
+            chart.resize(entries[0].contentRect.width, entries[0].contentRect.height);
+        }
+    });
     resizeObserver.observe(chartContainerRef.current);
 
     return () => {
       resizeObserver.disconnect();
+      chart.remove();
+      chartRef.current = null;
+      candlestickSeriesRef.current = null;
     };
-
-  }, [theme]); // Only re-run if theme changes
+  }, [theme]);
 
   React.useEffect(() => {
-    if (!candlestickSeriesRef.current) return;
-
-    const chartData = candles.map(c => ({
-      time: c.time as UTCTimestamp,
-      open: c.open,
-      high: c.high,
-      low: c.low,
-      close: c.close,
-    }));
-
-    candlestickSeriesRef.current.setData(chartData);
-    chartRef.current.chart?.timeScale().fitContent();
-
-  }, [candles]); // Re-run only when candles data changes
+    if (candlestickSeriesRef.current && candles?.length) {
+      const chartData = candles.map(c => ({
+        time: c.time as UTCTimestamp,
+        open: c.open,
+        high: c.high,
+        low: c.low,
+        close: c.close,
+      }));
+      candlestickSeriesRef.current.setData(chartData);
+      chartRef.current?.timeScale().fitContent();
+    }
+  }, [candles]);
 
   React.useEffect(() => {
       if (!candlestickSeriesRef.current) return;
-
+      
       // Clear previous pattern lines
       const currentLines = candlestickSeriesRef.current.priceLines();
       currentLines.forEach(line => candlestickSeriesRef.current?.removePriceLine(line));
@@ -138,7 +124,7 @@ export function TradingViewChart({
               });
           }
       });
-  }, [patterns]); // Re-run only when patterns change
+  }, [patterns]);
 
   const getErrorIcon = (errorType: string) => {
     switch (errorType) {
@@ -161,7 +147,7 @@ export function TradingViewChart({
 
   if (loading && !candles.length) {
     return (
-      <div className="w-full h-[400px] flex items-center justify-center bg-card border rounded-lg">
+      <div className="w-full h-[60vh] flex items-center justify-center bg-card border rounded-lg">
         <div className="flex items-center gap-2 text-muted-foreground">
           <RefreshCw className="w-4 h-4 animate-spin" />
           Loading {symbol.replace('USDT', '/USDT')} chart...
@@ -172,7 +158,7 @@ export function TradingViewChart({
 
   if (error && !candles.length) {
     return (
-      <div className="w-full h-[400px] flex flex-col items-center justify-center bg-card border rounded-lg p-6">
+      <div className="w-full h-[60vh] flex flex-col items-center justify-center bg-card border rounded-lg p-6">
         <div className={`flex items-center gap-2 mb-4 ${getErrorColor(error.type)}`}>
           {getErrorIcon(error.type)}
           <span className="font-medium">Chart Error</span>
