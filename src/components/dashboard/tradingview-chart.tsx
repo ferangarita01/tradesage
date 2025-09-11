@@ -2,7 +2,7 @@
 "use client";
 
 import * as React from "react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { createChart, IChartApi, ISeriesApi, LineStyle, UTCTimestamp } from 'lightweight-charts';
 import { AlertCircle, WifiOff, Clock, RefreshCw, BrainCircuit } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
@@ -29,6 +29,9 @@ export function TradingViewChart({
   refetch,
   retryCount,
 }: TradingViewChartProps) {
+  const chartContainerRef = React.useRef<HTMLDivElement>(null);
+  const chartRef = React.useRef<IChartApi | null>(null);
+  const candlestickSeriesRef = React.useRef<ISeriesApi<'Candlestick'> | null>(null);
   const { patterns, loading: patternsLoading, detectPatterns } = usePatternDetection();
 
   const handleDetectPatterns = () => {
@@ -43,11 +46,78 @@ export function TradingViewChart({
     detectPatterns({ candles: chartCandles, assetName: symbol });
   };
   
-  const chartData = candles.map(c => ({
-    time: new Date(c.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    price: c.close,
-    fullTime: c.time, // Keep original timestamp for pattern matching
-  }));
+  React.useEffect(() => {
+    if (!chartContainerRef.current || !candles || candles.length === 0) return;
+
+    const chartOptions = {
+        layout: {
+            background: { color: theme === 'dark' ? '#1E1E1E' : '#FFFFFF' },
+            textColor: theme === 'dark' ? '#D1D4DC' : '#191919',
+        },
+        grid: {
+            vertLines: { color: theme === 'dark' ? '#2A2A2A' : '#E1E1E1' },
+            horzLines: { color: theme === 'dark' ? '#2A2A2A' : '#E1E1E1' },
+        },
+        timeScale: {
+            timeVisible: true,
+            secondsVisible: false,
+        },
+    };
+
+    if (!chartRef.current) {
+        chartRef.current = createChart(chartContainerRef.current, chartOptions);
+        candlestickSeriesRef.current = chartRef.current.addCandlestickSeries({
+            upColor: '#26a69a',
+            downColor: '#ef5350',
+            borderDownColor: '#ef5350',
+            borderUpColor: '#26a69a',
+            wickDownColor: '#ef5350',
+            wickUpColor: '#26a69a',
+        });
+    } else {
+        chartRef.current.applyOptions(chartOptions);
+    }
+    
+    const chartData = candles.map(c => ({
+      time: (c.time / 1000) as UTCTimestamp,
+      open: c.open,
+      high: c.high,
+      low: c.low,
+      close: c.close,
+    }));
+
+    candlestickSeriesRef.current?.setData(chartData);
+    chartRef.current.timeScale().fitContent();
+
+    // Dibujar patrones
+    patterns.forEach((pattern, index) => {
+        if ((pattern.type === 'support' || pattern.type === 'resistance') && pattern.points.length > 0) {
+            const price = pattern.points[0].price;
+            candlestickSeriesRef.current?.createPriceLine({
+                price: price,
+                color: 'hsl(var(--accent))',
+                lineWidth: 2,
+                lineStyle: LineStyle.Dashed,
+                axisLabelVisible: true,
+                title: pattern.name,
+            });
+        }
+    });
+
+    const handleResize = () => {
+      if(chartContainerRef.current) {
+        chartRef.current?.resize(chartContainerRef.current.clientWidth, chartContainerRef.current.clientHeight);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+
+  }, [candles, patterns, theme]);
+
 
   const getErrorIcon = (errorType: string) => {
     switch (errorType) {
@@ -68,39 +138,6 @@ export function TradingViewChart({
     }
   };
 
-  // Helper to find the index in chartData corresponding to a pattern timestamp
-  const findDataIndex = (timestamp: string) => {
-    return chartData.findIndex(d => d.fullTime === parseInt(timestamp, 10));
-  };
-  
-  const renderPatternLines = () => {
-    return patterns.map((pattern, index) => {
-      if (pattern.type === 'support' || pattern.type === 'resistance') {
-        // Render horizontal line for support/resistance
-        const y = pattern.points[0].price;
-        return <ReferenceLine key={`pattern-${index}`} y={y} label={pattern.name} stroke="hsl(var(--accent))" strokeDasharray="3 3" />;
-      } else if (pattern.type === 'trendline' && pattern.points.length >= 2) {
-        // Render a trendline between the two points
-        const startIndex = findDataIndex(pattern.points[0].time);
-        const endIndex = findDataIndex(pattern.points[1].time);
-        
-        if (startIndex === -1 || endIndex === -1) return null;
-
-        const startPoint = { x: startIndex, y: pattern.points[0].price };
-        const endPoint = { x: endIndex, y: pattern.points[1].price };
-        
-        return (
-          <ReferenceLine
-            key={`pattern-${index}`}
-            segment={[{ x: startPoint.x, y: startPoint.y }, { x: endPoint.x, y: endPoint.y }]}
-            stroke="hsl(var(--accent))"
-            strokeWidth={2}
-          />
-        );
-      }
-      return null;
-    });
-  };
 
   if (loading && !candles.length) {
     return (
@@ -160,31 +197,9 @@ export function TradingViewChart({
             {patternsLoading ? 'Analizando...' : 'Analizar Patrones'}
           </Button>
        </div>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={chartData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#2a2a2a' : '#e1e1e1'} />
-          <XAxis dataKey="time" stroke={theme === 'dark' ? '#d1d4dc' : '#191919'} />
-          <YAxis stroke={theme === 'dark' ? '#d1d4dc' : '#191919'} domain={['auto', 'auto']} />
-          <Tooltip
-            contentStyle={{
-              backgroundColor: theme === 'dark' ? '#1e1e1e' : '#ffffff',
-              borderColor: theme === 'dark' ? '#485c7b' : '#cccccc'
-            }}
-            labelStyle={{ color: theme === 'dark' ? '#d1d4dc' : '#191919' }}
-          />
-          <Legend />
-          <Line type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-          {renderPatternLines()}
-        </LineChart>
-      </ResponsiveContainer>
+       <div ref={chartContainerRef} className="w-full h-full" />
     </div>
   );
 }
+
+    

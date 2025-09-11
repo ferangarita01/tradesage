@@ -52,7 +52,14 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
         history: messages,
         model: model,
         assetName: symbol,
-        candles: candles,
+        candles: candles?.map(c => ({
+          time: String(c.time),
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+          volume: c.volume
+        })),
       };
 
       const response = await getChatResponse(chatInput);
@@ -161,3 +168,5 @@ export function ChatWidget({ symbol, candles }: ChatWidgetProps) {
     </div>
   );
 }
+
+    
