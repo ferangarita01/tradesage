@@ -41,7 +41,7 @@ export default function Home() {
         >
           {isChatOpen && <ChatWidget 
             symbol={selectedSymbol}
-            candles={candles.map(c => ({ time: String(c.time), price: c.close }))}
+            candles={candles}
           />}
         </aside>
         <div className="absolute bottom-4 right-4 z-10">
