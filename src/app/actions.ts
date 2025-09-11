@@ -3,9 +3,10 @@
 
 import { analyzeChart, type AnalyzeChartInput, type AnalyzeChartOutput } from "@/ai/flows/analyze-chart-patterns";
 import { chat, type ChatInput, type ChatOutput } from "@/ai/flows/chat";
+import { detectChartPatterns, type DetectChartPatternsInput, type DetectChartPatternsOutput } from "@/ai/flows/detect-chart-patterns";
+
 
 export async function getChartAnalysis(input: AnalyzeChartInput): Promise<AnalyzeChartOutput> {
-  "use server";
   try {
     const analysis = await analyzeChart(input);
     return analysis;
@@ -16,8 +17,17 @@ export async function getChartAnalysis(input: AnalyzeChartInput): Promise<Analyz
   }
 }
 
+export async function getPatternAnalysis(input: DetectChartPatternsInput): Promise<DetectChartPatternsOutput> {
+  try {
+    const analysis = await detectChartPatterns(input);
+    return analysis;
+  } catch (error) {
+    console.error('Error in getPatternAnalysis:', error);
+    return { patterns: [] };
+  }
+}
+
 export async function getChatResponse(input: ChatInput): Promise<ChatOutput> {
-    "use server";
     try {
         const response = await chat(input);
         return response;
