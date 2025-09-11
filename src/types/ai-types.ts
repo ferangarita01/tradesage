@@ -3,12 +3,12 @@ import { z } from "zod";
 
 // --- Candle Schema (OHLC completo) ---
 export const CandleSchema = z.object({
-  time: z.string(),         // timestamp en string
-  open: z.number(),         // precio de apertura
-  high: z.number(),         // precio más alto
-  low: z.number(),          // precio más bajo
-  close: z.number(),        // precio de cierre
-  volume: z.number(),       // volumen (o 0 si no lo tienes)
+  time: z.union([z.number(), z.string()]),   // 🔥 acepta número y string
+  open: z.number(),
+  high: z.number(),
+  low: z.number(),
+  close: z.number(),
+  volume: z.number(),
 });
 export type Candle = z.infer<typeof CandleSchema>;
 
