@@ -7,8 +7,6 @@ import {
   UTCTimestamp,
   LineStyle,
   PriceLineOptions,
-  IChartApi,
-  ISeriesApi,
 } from "lightweight-charts";
 import {
   AlertCircle,
@@ -20,11 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Candle, PricesError } from "@/hooks/usePrices";
 import { usePatternDetection } from "@/hooks/usePatternDetection";
-
-// Tipos internos inferidos
-type ChartType = IChartApi;
-type SeriesType = ISeriesApi<"Candlestick">;
-
 
 interface TradingViewChartProps {
   symbol?: string;
@@ -47,10 +40,8 @@ export function TradingViewChart({
   retryCount,
 }: TradingViewChartProps) {
   const chartContainerRef = React.useRef<HTMLDivElement>(null);
-  const chartRef = React.useRef<{
-    chart: ChartType;
-    series: SeriesType;
-  } | null>(null);
+  const chartRef = React.useRef<ReturnType<typeof createChart> | null>(null);
+  const seriesRef = React.useRef<any>(null); // Usamos 'any' para evitar problemas de tipo con la serie
 
   const { patterns, loading: patternsLoading, detectPatterns } =
     usePatternDetection();
@@ -61,7 +52,7 @@ export function TradingViewChart({
 
   // Inicialización única
   React.useEffect(() => {
-    if (chartRef.current || !chartContainerRef.current) return;
+    if (!chartContainerRef.current) return;
 
     const chart = createChart(chartContainerRef.current, {
       width: chartContainerRef.current.clientWidth,
@@ -86,26 +77,30 @@ export function TradingViewChart({
       wickUpColor: "#26a69a",
     });
 
-    chartRef.current = { chart, series };
+    chartRef.current = chart;
+    seriesRef.current = series;
 
     const resizeObserver = new ResizeObserver((entries) => {
-      if (entries[0]) {
+      if (entries[0] && chartRef.current) {
         const { width, height } = entries[0].contentRect;
-        chart.resize(width, height);
+        chartRef.current.resize(width, height);
       }
     });
     resizeObserver.observe(chartContainerRef.current);
 
     return () => {
       resizeObserver.disconnect();
-      chart.remove();
+      if (chartRef.current) {
+        chartRef.current.remove();
+      }
       chartRef.current = null;
+      seriesRef.current = null;
     };
   }, [theme]);
 
   // Actualización de velas
   React.useEffect(() => {
-    if (chartRef.current && candles?.length) {
+    if (seriesRef.current && candles?.length) {
       const chartData = candles.map((c) => ({
         time: (c.time / 1000) as UTCTimestamp,
         open: c.open,
@@ -113,19 +108,19 @@ export function TradingViewChart({
         low: c.low,
         close: c.close,
       }));
-      chartRef.current.series.setData(chartData);
-      chartRef.current.chart.timeScale().fitContent();
+      seriesRef.current.setData(chartData);
+      chartRef.current?.timeScale().fitContent();
     }
   }, [candles]);
 
   // Dibujo de patrones
   React.useEffect(() => {
-    if (!chartRef.current) return;
-    const { series } = chartRef.current;
+    if (!seriesRef.current) return;
+    const series = seriesRef.current;
 
     // Limpia líneas anteriores
     const currentLines = series.priceLines();
-    currentLines.forEach((line) => series.removePriceLine(line));
+    currentLines.forEach((line: any) => series.removePriceLine(line));
 
 
     patterns.forEach((pattern) => {
@@ -239,5 +234,3 @@ export function TradingViewChart({
     </div>
   );
 }
-
-    
