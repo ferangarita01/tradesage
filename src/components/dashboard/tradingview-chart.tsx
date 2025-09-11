@@ -48,7 +48,7 @@ export function TradingViewChart({
   };
   
   React.useEffect(() => {
-    if (!chartContainerRef.current || !candles || candles.length === 0) return;
+    if (!chartContainerRef.current) return;
 
     const chartOptions = {
         layout: {
@@ -67,10 +67,10 @@ export function TradingViewChart({
         height: chartContainerRef.current.clientHeight,
     };
 
+    // Create chart instance only once
     if (!chartRef.current.chart) {
-        const chart = createChart(chartContainerRef.current, chartOptions);
-        chartRef.current.chart = chart;
-        candlestickSeriesRef.current = chart.addCandlestickSeries({
+        chartRef.current.chart = createChart(chartContainerRef.current, chartOptions);
+        candlestickSeriesRef.current = chartRef.current.chart.addCandlestickSeries({
             upColor: '#26a69a',
             downColor: '#ef5350',
             borderDownColor: '#ef5350',
@@ -82,62 +82,63 @@ export function TradingViewChart({
         chartRef.current.chart.applyOptions(chartOptions);
     }
     
+    // Resize observer
+    const handleResize = () => {
+      if (chartContainerRef.current && chartRef.current.chart) {
+        chartRef.current.chart.resize(
+          chartContainerRef.current.clientWidth,
+          chartContainerRef.current.clientHeight
+        );
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(chartContainerRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+
+  }, [theme]); // Only re-run if theme changes
+
+  React.useEffect(() => {
+    if (!candlestickSeriesRef.current) return;
+
     const chartData = candles.map(c => ({
-      time: (c.time / 1000) as UTCTimestamp,
+      time: c.time as UTCTimestamp,
       open: c.open,
       high: c.high,
       low: c.low,
       close: c.close,
     }));
 
-    candlestickSeriesRef.current?.setData(chartData);
-    chartRef.current.chart.timeScale().fitContent();
+    candlestickSeriesRef.current.setData(chartData);
+    chartRef.current.chart?.timeScale().fitContent();
 
-    if (candlestickSeriesRef.current) {
-        const lines = candlestickSeriesRef.current.priceLines();
-        lines.forEach(line => candlestickSeriesRef.current?.removePriceLine(line));
-    }
+  }, [candles]); // Re-run only when candles data changes
 
-    patterns.forEach((pattern) => {
-        if ((pattern.type === 'support' || pattern.type === 'resistance') && pattern.points.length > 0) {
-            const price = pattern.points[0].price;
-            candlestickSeriesRef.current?.createPriceLine({
-                price: price,
-                color: 'hsl(var(--accent))',
-                lineWidth: 2,
-                lineStyle: LineStyle.Dashed,
-                axisLabelVisible: true,
-                title: pattern.name,
-            });
-        }
-    });
+  React.useEffect(() => {
+      if (!candlestickSeriesRef.current) return;
 
-    const handleResize = () => {
-      if (chartContainerRef.current && chartRef.current.chart) {
-        const container = chartContainerRef.current;
-        const rect = container.getBoundingClientRect();
-        
-        chartRef.current.chart.resize(
-          Math.max(rect.width, 300),
-          Math.max(rect.height, 200)
-        );
-      }
-    };
+      // Clear previous pattern lines
+      const currentLines = candlestickSeriesRef.current.priceLines();
+      currentLines.forEach(line => candlestickSeriesRef.current?.removePriceLine(line));
 
-    setTimeout(handleResize, 0);
-
-    window.addEventListener('resize', handleResize);
-    const resizeObserver = new ResizeObserver(handleResize);
-    if (chartContainerRef.current) {
-      resizeObserver.observe(chartContainerRef.current);
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      resizeObserver.disconnect();
-    };
-
-  }, [candles, patterns, theme, symbol]);
+      // Draw new patterns
+      patterns.forEach((pattern) => {
+          if ((pattern.type === 'support' || pattern.type === 'resistance') && pattern.points.length > 0) {
+              const price = pattern.points[0].price;
+              candlestickSeriesRef.current?.createPriceLine({
+                  price: price,
+                  color: 'hsl(var(--accent))',
+                  lineWidth: 2,
+                  lineStyle: LineStyle.Dashed,
+                  axisLabelVisible: true,
+                  title: pattern.name,
+              });
+          }
+      });
+  }, [patterns]); // Re-run only when patterns change
 
   const getErrorIcon = (errorType: string) => {
     switch (errorType) {
